@@ -11,10 +11,13 @@ from ezodf import Sheet
 from odf.opendocument import OpenDocumentText
 from odf.text import P
 
+window = tk.Tk()
 def ask_file_type(window):
     file_type = simpledialog.askstring("Input", "Enter the file type (.csv, .xls, .odt, .ods)", parent=window)
     window.file_extension = file_type
     return file_type
+
+file_extension = ask_file_type(window)
 
 def save_list(window, listbox):
     file_type = window.file_extension
@@ -382,13 +385,10 @@ def close_about():
 about_window = None
   
 def create_window():
-  window = tk.Tk()
   menubar = tk.Menu(window)
   window.config(menu=menubar)
-
   file_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="File", menu=file_menu)
-
   file_menu.add_command(label="New", command=new_file)
 
   file_menu.add_command(label="Open",
