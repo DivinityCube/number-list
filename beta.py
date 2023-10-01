@@ -12,13 +12,13 @@ from odf.opendocument import OpenDocumentText
 from odf.text import P
 
 window = tk.Tk()
+
 def ask_file_type(window):
     file_type = simpledialog.askstring("Input", "Enter the file type (.csv, .xls, .odt, .ods)", parent=window)
     window.file_extension = file_type
     return file_type
 
 file_extension = ask_file_type(window)
-
 def save_list(window, listbox):
     file_type = window.file_extension
     if file_type == '.csv':
@@ -366,9 +366,9 @@ def about(window):
 
   title_label = tk.Label(about_window, text="About Number List:")
   title_label.pack()
-  update_label = tk.Label(about_window, text="The 'Further User Experience' Update")
+  update_label = tk.Label(about_window, text="The 'Things Are Changing' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.58.474")
+  version_label = tk.Label(about_window, text="Version 0.59.723 BETA 2")
   version_label.pack()
 
   contributor_label = tk.Label(about_window, text="Contributors:")
@@ -453,4 +453,6 @@ def create_window():
     window.config(menu=menubar)
     button_save.pack()
 create_window()
+messagebox.showwarning("Warning", "This version (0.59.723) is in BETA. This means the application's updates may be unfinished and could cause bugs. By clicking 'OK' or alternatively closing this warning window, you acknowledge this.", parent=window)
+
 messagebox.showinfo("Saving Info","Wondering how to save files as specific file extensions? It's changed! Starting from Update 0.58, you can change the file extension by clicking on 'File', 'File Extension...', and then entering your desired file extension!\nNote: Users will have to choose the file extension on startup, otherwise an error will occur.")
