@@ -368,7 +368,7 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'Things Are Changing' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.59.723 FINAL BETA")
+  version_label = tk.Label(about_window, text="Version 0.59.723")
   version_label.pack()
 
   contributor_label = tk.Label(about_window, text="Contributors:")
