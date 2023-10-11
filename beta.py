@@ -366,9 +366,9 @@ def about(window):
 
   title_label = tk.Label(about_window, text="About Number List:")
   title_label.pack()
-  update_label = tk.Label(about_window, text="The 'Final User Experience' Update")
+  update_label = tk.Label(about_window, text="The 'Getting Started' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.60.114 BETA")
+  version_label = tk.Label(about_window, text="Version 0.60.667 BETA")
   version_label.pack()
 
   contributor_label = tk.Label(about_window, text="Contributors:")
@@ -385,6 +385,8 @@ def close_about():
 about_window = None
   
 def create_window():
+  button_extension = tk.Button(window, text="Change File Extension", command=lambda: ask_file_type(window))
+  button_extension.pack()
   menubar = tk.Menu(window)
   window.config(menu=menubar)
   file_menu = tk.Menu(menubar, tearoff=0)
@@ -449,6 +451,6 @@ def create_window():
 
     window.config(menu=menubar)
 create_window()
-messagebox.showwarning("Warning", "This version (0.59.723) is in BETA. This means the application's updates may be unfinished and could cause bugs. By clicking 'OK' or alternatively closing this warning window, you acknowledge this.", parent=window)
+
 messagebox.showinfo("Saving Info","Wondering how to save files as specific file extensions? It's changed! Starting from Version 0.58, you can change the file extension by clicking on 'File', 'File Extension...', and then entering your desired file extension!")
 messagebox.showinfo("Saving Info #2","Saving files in general have also changed! Starting from Version 0.59, saving lists can now only be done through the 'File' submenu. Happy saving!")
