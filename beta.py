@@ -13,12 +13,17 @@ from odf.text import P
 
 window = tk.Tk()
 
+def show_current_file_extension(window):
+    messagebox.showinfo("Current File Extension", f"The current file extension is: {window.file_extension}")
+
+
 def ask_file_type(window):
     file_type = simpledialog.askstring("Input", "Enter the file type (.csv, .xls, .odt, .ods)", parent=window)
     window.file_extension = file_type
     return file_type
 
 file_extension = ask_file_type(window)
+
 def save_list(window, listbox):
     file_type = window.file_extension
     if file_type == '.csv':
@@ -366,7 +371,7 @@ def about(window):
 
   title_label = tk.Label(about_window, text="About Number List:")
   title_label.pack()
-  update_label = tk.Label(about_window, text="The 'Getting Started' Update")
+  update_label = tk.Label(about_window, text="The 'Final User Experience' Update")
   update_label.pack()
   version_label = tk.Label(about_window, text="Version 0.60.667 BETA")
   version_label.pack()
@@ -397,11 +402,10 @@ def create_window():
   file_menu.add_command(label="Open",
                         command=lambda: open_file(window, listbox))
   file_menu.add_command(label="Exit", command=lambda: exit_file(window))
-  file_menu.add_command(label="File Extension...", command=lambda: ask_file_type(window))
-  help_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Help", menu=help_menu)
 
   help_menu.add_command(label="About", command=lambda: about(window))
+  help_menu.add_command(label="Current File Extension", command=lambda: show_current_file_extension(window))
 
   math_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Math", menu=math_menu)
@@ -444,13 +448,11 @@ def create_window():
   def create_menu(window, listbox):
     menubar = tk.Menu(window)
 
-    file_menu = tk.Menu(menubar, tearoff=0)
-    file_menu.add_command(label="File Extension...", command=lambda: ask_file_type(window))
-
     menubar.add_cascade(label="File", menu=file_menu)
 
     window.config(menu=menubar)
 create_window()
 
+messagebox.showwarning("Warning", "This version (0.59.723) is in BETA. This means the application's updates may be unfinished and could cause bugs. By clicking 'OK' or alternatively closing this warning window, you acknowledge this.", parent=window)
 messagebox.showinfo("Saving Info","Wondering how to save files as specific file extensions? It's changed! Starting from Version 0.58, you can change the file extension by clicking on 'File', 'File Extension...', and then entering your desired file extension!")
 messagebox.showinfo("Saving Info #2","Saving files in general have also changed! Starting from Version 0.59, saving lists can now only be done through the 'File' submenu. Happy saving!")
