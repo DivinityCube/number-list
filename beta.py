@@ -402,6 +402,7 @@ def create_window():
   file_menu.add_command(label="Open",
                         command=lambda: open_file(window, listbox))
   file_menu.add_command(label="Exit", command=lambda: exit_file(window))
+  help_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Help", menu=help_menu)
 
   help_menu.add_command(label="About", command=lambda: about(window))
@@ -444,15 +445,8 @@ def create_window():
                            text="Clear List",
                            command=lambda: clear_list(listbox))
   button_clear.pack()
-
-  def create_menu(window, listbox):
-    menubar = tk.Menu(window)
-
-    menubar.add_cascade(label="File", menu=file_menu)
-
-    window.config(menu=menubar)
 create_window()
 
-messagebox.showwarning("Warning", "This version (0.59.723) is in BETA. This means the application's updates may be unfinished and could cause bugs. By clicking 'OK' or alternatively closing this warning window, you acknowledge this.", parent=window)
+messagebox.showwarning("Warning", "This version (0.60.667) is in BETA. This means the application's updates may be unfinished and could cause bugs. By clicking 'OK' or alternatively closing this warning window, you acknowledge this.", parent=window)
 messagebox.showinfo("Saving Info","Wondering how to save files as specific file extensions? It's changed! Starting from Version 0.58, you can change the file extension by clicking on 'File', 'File Extension...', and then entering your desired file extension!")
 messagebox.showinfo("Saving Info #2","Saving files in general have also changed! Starting from Version 0.59, saving lists can now only be done through the 'File' submenu. Happy saving!")
