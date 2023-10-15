@@ -379,7 +379,7 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'Final User Experience' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.60.667 FINAL BETA")
+  version_label = tk.Label(about_window, text="Version 0.60.667")
   version_label.pack()
 
   contributor_label = tk.Label(about_window, text="Contributors:")
@@ -456,8 +456,6 @@ def create_window():
                            command=lambda: clear_list(listbox))
   button_clear.pack()
 create_window()
-
-messagebox.showwarning("Warning", "This version (0.59.723) is in FINAL BETA. This means the application has most parts of the update added and functioning perfectly, but other aspects may be unfinished and could cause bugs. By clicking 'OK' or alternatively closing this warning window, you acknowledge this.", parent=window)
 
 messagebox.showinfo("Saving Info","Wondering how to save files as specific file extensions? It's changed! Starting from Version 0.58, you can change the file extension by clicking on 'File', 'File Extension...', and then entering your desired file extension!")
 messagebox.showinfo("Saving Info #2","Saving files in general have also changed! Starting from Version 0.59, saving lists can now only be done through the 'File' submenu. Happy saving!")
