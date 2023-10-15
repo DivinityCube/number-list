@@ -17,7 +17,7 @@ def delete_selected_entry(listbox):
   if selected_index:
     listbox.delete(selected_index)
   else:
-    messagebox.showerror("Error", "No entry selected!", parent=window())
+    messagebox.showerror("Error", "No entry selected!", parent=window)
 
 def show_current_file_extension(window):
     messagebox.showinfo("Current File Extension", f"The current file extension is: {window.file_extension}")
