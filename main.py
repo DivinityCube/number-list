@@ -306,6 +306,7 @@ def define_algebraic_letter(window):
 
 
 def convert_algebra(window, listbox):
+  counter = 1
   items = listbox.get(0, tk.END)
   converted_items = []
   for item in items:
@@ -313,7 +314,7 @@ def convert_algebra(window, listbox):
       converted_items.append(str(algebra_dict[item]))
     else:
       converted_items.append(item)
-  listbox.delete(0, tk.END)
+    listbox.delete(0, tk.END)
   for item in converted_items:
     listbox.insert(tk.END, f"{counter}. {item}")
     counter += 1
@@ -321,10 +322,6 @@ def convert_algebra(window, listbox):
     messagebox.showerror("Error",
                          "You can't convert non-defined algebraic numbers!",
                          parent=window)
-
-
-def new_file():
-  create_window()
 
 
 def exit_file(window):
@@ -353,7 +350,7 @@ def about(window):
   update_label = tk.Label(about_window,
                           text="The 'Final User Experience' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.60.667-3")
+  version_label = tk.Label(about_window, text="Version 0.60.667-4")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -368,8 +365,9 @@ def close_about():
 
 about_window = None
 
-
-def create_window():
+def create_new_window():
+  window = tk.Tk()
+  window.title("Number List")
   delete_button = tk.Button(window,
                             text="Delete Selected Entry",
                             command=lambda: delete_selected_entry(listbox))
@@ -384,7 +382,63 @@ def create_window():
   menubar.add_cascade(label="File", menu=file_menu)
   file_menu.add_command(label="Save",
                         command=lambda: save_list(window, listbox))
-  file_menu.add_command(label="New", command=new_file)
+  file_menu.add_command(label="New", command=lambda: create_new_window())
+  file_menu.add_command(label="Open",
+                        command=lambda: open_file(window, listbox))
+  file_menu.add_command(label="Exit", command=lambda: exit_file(window))
+  help_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Help", menu=help_menu)
+  help_menu.add_command(label="About", command=lambda: about(window))
+  help_menu.add_command(label="Current File Extension",
+                        command=lambda: show_current_file_extension(window))
+  math_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Math", menu=math_menu)
+  math_menu.add_command(label="Add",
+                        command=lambda: add_all_numbers(window, listbox))
+  math_menu.add_command(label="Subtract",
+                        command=lambda: subtract_numbers(window, listbox))
+  math_menu.add_command(label="Multiply",
+                        command=lambda: multiply_all_numbers(window, listbox))
+  math_menu.add_command(label="Divide",
+                        command=lambda: divide_all_numbers(window, listbox))
+  math_menu.add_command(label="Square",
+                        command=lambda: square_all_numbers(window, listbox))
+  math_menu.add_command(label="Define Algebraic Letter",
+                        command=lambda: define_algebraic_letter(window))
+  more_algebra_menu = tk.Menu(math_menu, tearoff=0)
+  math_menu.add_cascade(label="More Algebra...", menu=more_algebra_menu)
+  more_algebra_menu.add_command(
+    label="Convert Algebra", command=lambda: convert_algebra(window, listbox))
+  listbox = tk.Listbox(window)
+  listbox.pack()
+  entry = tk.Entry(window)
+  entry.pack()
+  button_add = tk.Button(window,
+                         text="Add number",
+                         command=lambda: add_number(window, listbox, entry))
+  button_add.pack()
+  button_clear = tk.Button(window,
+                           text="Clear List",
+                           command=lambda: clear_list(listbox))
+  button_clear.pack()
+
+def create_window():
+  window.title("Number List")
+  delete_button = tk.Button(window,
+                            text="Delete Selected Entry",
+                            command=lambda: delete_selected_entry(listbox))
+  delete_button.pack()
+  button_extension = tk.Button(window,
+                               text="Change File Extension",
+                               command=lambda: ask_file_type(window))
+  button_extension.pack()
+  menubar = tk.Menu(window)
+  window.config(menu=menubar)
+  file_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="File", menu=file_menu)
+  file_menu.add_command(label="Save",
+                        command=lambda: save_list(window, listbox))
+  file_menu.add_command(label="New", command=lambda: create_new_window())
   file_menu.add_command(label="Open",
                         command=lambda: open_file(window, listbox))
   file_menu.add_command(label="Exit", command=lambda: exit_file(window))
@@ -434,3 +488,8 @@ messagebox.showinfo(
   "Saving Info #2",
   "Saving files in general have also changed! Starting from Version 0.59, saving lists can now only be done through the 'File' submenu. Happy saving!"
 )
+
+
+def main():
+  window.mainloop()
+main()
