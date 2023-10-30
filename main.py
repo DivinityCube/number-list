@@ -3,6 +3,7 @@ import csv
 from datetime import datetime
 from tkinter import messagebox, filedialog
 from tkinter import simpledialog
+import openpyxl
 import xlwt
 import xlrd
 import pandas as pd
@@ -12,6 +13,7 @@ from odf.opendocument import OpenDocumentText
 from odf.text import P
 
 window = tk.Tk()
+listbox = tk.Listbox(window)
 counter = 1
 
 
@@ -31,7 +33,9 @@ def show_current_file_extension(window):
 
 def ask_file_type(window):
   file_type = simpledialog.askstring(
-    "Input", "Enter the file type (.csv, .xls, .odt, .ods)", parent=window)
+    "Input",
+    "Enter the file type (.csv, .xls, .odt, .ods, .xlsx)",
+    parent=window)
   window.file_extension = file_type
   return file_type
 
@@ -40,17 +44,28 @@ file_extension = ask_file_type(window)
 
 
 def save_list(window, listbox):
-  file_type = window.file_extension
-  if file_type == '.csv':
-    save_to_csv(window, listbox)
-  elif file_type == '.xls':
-    save_to_xls(window, listbox)
-  elif file_type == '.odt':
-    save_to_odf(window, listbox)
-  elif file_type == '.ods':
-    save_to_ods(window, listbox)
-  else:
-    messagebox.showerror("Error", "Invalid file type!", parent=window)
+  numbers = listbox.get(0, tk.END)
+  if not numbers:
+    messagebox.showerror("Error", "You can't save an empty list!", parent=window)
+    return
+
+  try:
+    file_type = window.file_extension
+    if file_type == '.csv':
+      save_to_csv(window, listbox)
+    elif file_type == '.xls':
+      save_to_xls(window, listbox)
+    elif file_type == '.odt':
+      save_to_odf(window, listbox)
+    elif file_type == '.ods':
+      save_to_ods(window, listbox)
+    elif file_type == '.xlsx':
+      save_to_xlsx(window, listbox)
+    else:
+      messagebox.showerror("Error", "Invalid file type!", parent=window)
+      
+  except Exception as e:
+    messagebox.showerror("Error", str(e), parent=window)
 
 
 def add_number(window, listbox, entry):
@@ -86,11 +101,11 @@ from odf.opendocument import load
 
 def open_file(window, listbox):
   global counter
-  filename = filedialog.askopenfilename(filetypes=[('Excel Files', '*.xls'),
-                                                   ('CSV Files', '*.csv'),
-                                                   ('ODF Text Files', '*.odt'),
-                                                   ('ODF Spreadsheet Files',
-                                                    '*.ods')],
+  filename = filedialog.askopenfilename(filetypes=[
+    ('Excel Files', '*.xls ; *.xlsx'), ('CSV Files', '*.csv'),
+    ('ODF Text Files', '*.odt'), ('ODF Spreadsheet Files', '*.ods'),
+    ('All Files', '*.*')
+  ],
                                         parent=window)
   if not filename:
     return
@@ -121,6 +136,13 @@ def open_file(window, listbox):
       for cell in row:
         if cell.value is not None:
           listbox.insert(tk.END, f"{counter}. {str(cell.value)}")
+  elif filename.endswith('.xlsx'):
+    workbook = openpyxl.load_workbook(filename)
+    sheet = workbook.active
+    for row in sheet.iter_cols(min_row=1, min_col=1, values_only=True):
+      for cell in row:
+        if cell is not None:
+          listbox.insert(tk.END, f"{counter}. {str(cell)}")
           counter += 1
 
 
@@ -196,6 +218,33 @@ def save_to_xls(window, listbox):
         counter += 1
   else:
     messagebox.showerror("Error", "Unsupported file format.", parent=window)
+
+
+def save_to_xlsx(window, listbox):
+  numbers = listbox.get(0, tk.END)
+  if not numbers:
+    messagebox.showerror("Error",
+                         "You can't save an empty list!",
+                         parent=window)
+    return
+  now = datetime.now()
+  filename = f'numbers_{now.strftime("%Y%m%d%H%M%S")}.xlsx'
+  filetypes = [('Excel Files', ['*.xlsx ; *.xls'])]
+  filename = filedialog.asksaveasfilename(defaultextension=".xlsx",
+                                          filetypes=filetypes,
+                                          parent=window)
+  if not filename:
+    return
+  workbook = openpyxl.Workbook()
+  sheet = workbook.active
+  for i, number in enumerate(numbers):
+    sheet.cell(row=i + 1, column=1, value=number.split(". ")[1])
+  workbook.save(filename).xlsx
+
+
+def file_menu_change(file_menu):
+  file_menu.add_command(label="Save as XLSX",
+                        command=lambda: save_to_xlsx(window, listbox))
 
 
 def save_to_odf(window, listbox):
@@ -324,10 +373,6 @@ def convert_algebra(window, listbox):
                          parent=window)
 
 
-def exit_file(window):
-  window.destroy()
-
-
 def change_file_extension(window, extension):
   window.file_extension = extension
 
@@ -347,10 +392,9 @@ def about(window):
     about_window.protocol("WM_DELETE_WINDOW", close_about)
   title_label = tk.Label(about_window, text="About Number List:")
   title_label.pack()
-  update_label = tk.Label(about_window,
-                          text="The 'Final User Experience' Update")
+  update_label = tk.Label(about_window, text="The 'We Love Files' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.60.667-4")
+  version_label = tk.Label(about_window, text="Version 0.61.225")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -364,6 +408,7 @@ def close_about():
 
 
 about_window = None
+
 
 def create_new_window():
   window = tk.Tk()
@@ -421,6 +466,7 @@ def create_new_window():
                            text="Clear List",
                            command=lambda: clear_list(listbox))
   button_clear.pack()
+
 
 def create_window():
   window.title("Number List")
@@ -492,4 +538,6 @@ messagebox.showinfo(
 
 def main():
   window.mainloop()
+
+
 main()
