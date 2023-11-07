@@ -370,7 +370,7 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'We Love More Files' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.62.887 BETA")
+  version_label = tk.Label(about_window, text="Version 0.62.887 FINAL BETA")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -397,6 +397,7 @@ def create_new_window():
                                text="Change File Extension",
                                command=lambda: ask_file_type(window))
   button_extension.pack()
+
   menubar = tk.Menu(window)
   window.config(menu=menubar)
   file_menu = tk.Menu(menubar, tearoff=0)
@@ -438,11 +439,15 @@ def create_new_window():
                          text="Add number",
                          command=lambda: add_number(window, listbox, entry))
   button_add.pack()
+  save_button = tk.Button(window,
+  text="Save List",
+  command=lambda: save_list(listbox))
+  save_button.pack()
   button_clear = tk.Button(window,
                            text="Clear List",
                            command=lambda: clear_list(listbox))
   button_clear.pack()
-
+  
 def create_window():
   window.title("Number List")
   delete_button = tk.Button(window,
@@ -494,19 +499,20 @@ def create_window():
                          text="Add number",
                          command=lambda: add_number(window, listbox, entry))
   button_add.pack()
+  save_button = tk.Button(window,
+  text="Save List",
+  command=lambda: save_list(listbox))
+  save_button.pack()
   button_clear = tk.Button(window,
                            text="Clear List",
                            command=lambda: clear_list(listbox))
   button_clear.pack()
-
 create_window()
+
+messagebox.showwarning("Final Beta", "This version (Version 0.62.887) is currently in FINAL BETA. This means that you may encounter outstanding bugs with recently added features as they have not been thoroughly tested yet. By clicking 'OK' or otherwise closing this window, you acknowledge this.")
 messagebox.showinfo(
   "Saving Info",
   "Defining file extensions have changed again! Starting from Version 0.60, clicking on the 'Change File Extension' button will now change the file extension of the file you are currently working on! No more navigating to the 'File' menu!"
-)
-messagebox.showinfo(
-  "Saving Info #2",
-  "Saving files in general have also changed! Starting from Version 0.59, saving lists can now only be done through the 'File' submenu. Happy saving!"
 )
 
 def main():
