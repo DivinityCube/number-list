@@ -16,7 +16,6 @@ window = tk.Tk()
 listbox = tk.Listbox(window)
 counter = 1
 
-
 def delete_selected_entry(listbox):
   selected_index = listbox.curselection()
   if selected_index:
@@ -24,21 +23,20 @@ def delete_selected_entry(listbox):
   else:
     messagebox.showerror("Error", "No entry selected!", parent=window)
 
-
 def show_current_file_extension(window):
   messagebox.showinfo(
     "Current File Extension",
     f"The current file extension is: {window.file_extension}")
-
 
 def ask_file_type(window):
   file_type = simpledialog.askstring(
     "Input",
     "Enter the file type (.csv, .xls, .odt, .ods, .xlsx)",
     parent=window)
-  window.file_extension = file_type
-  return file_type
 
+  window.file_extension = "." + file_type.split(".")[-1]
+
+  return file_type
 
 file_extension = ask_file_type(window)
 
@@ -68,6 +66,9 @@ def save_list(window, listbox):
     messagebox.showerror("Error", str(e), parent=window)
 
 
+  except Exception as e:
+    messagebox.showerror("Error", str(e), parent=window)
+
 def add_number(window, listbox, entry):
   global counter
   item = entry.get()
@@ -86,14 +87,12 @@ def add_number(window, listbox, entry):
       parent=window)
   entry.delete(0, tk.END)
 
-
 def clear_list(listbox, show_message=True):
   numbers = listbox.get(0, tk.END)
   if not numbers and show_message:
     messagebox.showerror("Error", "The list is already empty!")
   else:
     listbox.delete(0, tk.END)
-
 
 from odf import text, teletype
 from odf.opendocument import load
@@ -105,11 +104,11 @@ def open_file(window, listbox):
     ('Excel Files', '*.xls ; *.xlsx'), ('CSV Files', '*.csv'),
     ('ODF Text Files', '*.odt'), ('ODF Spreadsheet Files', '*.ods'),
     ('All Files', '*.*')
-  ],
-                                        parent=window)
+  ], parent=window)
   if not filename:
     return
   clear_list(listbox, show_message=False)
+  window.file_extension = "." + filename.split(".")[-1]
   if filename.endswith('.xls'):
     book = xlrd.open_workbook(filename)
     sheet = book.sheet_by_index(0)
@@ -145,7 +144,6 @@ def open_file(window, listbox):
           listbox.insert(tk.END, f"{counter}. {str(cell)}")
           counter += 1
 
-
 def save_to_csv(window, listbox):
   numbers = listbox.get(0, tk.END)
   if not numbers:
@@ -160,7 +158,6 @@ def save_to_csv(window, listbox):
     writer = csv.writer(f)
     for number in numbers:
       writer.writerow([number.split(". ")[1]])
-
 
 def save_to_ods(window, listbox):
   numbers = listbox.get(0, tk.END)
@@ -178,7 +175,6 @@ def save_to_ods(window, listbox):
     sheet[i, 0].set_value(number.split(". ")[1])
   spreadsheet.sheets += sheet
   spreadsheet.save()
-
 
 def save_to_xls(window, listbox):
   numbers = listbox.get(0, tk.END)
@@ -219,7 +215,6 @@ def save_to_xls(window, listbox):
   else:
     messagebox.showerror("Error", "Unsupported file format.", parent=window)
 
-
 def save_to_xlsx(window, listbox):
   numbers = listbox.get(0, tk.END)
   if not numbers:
@@ -241,11 +236,9 @@ def save_to_xlsx(window, listbox):
     sheet.cell(row=i + 1, column=1, value=number.split(". ")[1])
   workbook.save(filename).xlsx
 
-
 def file_menu_change(file_menu):
   file_menu.add_command(label="Save as XLSX",
                         command=lambda: save_to_xlsx(window, listbox))
-
 
 def save_to_odf(window, listbox):
   numbers = listbox.get(0, tk.END)
@@ -263,7 +256,6 @@ def save_to_odf(window, listbox):
     textdoc.text.addElement(p)
   textdoc.save(filename)
 
-
 def add_all_numbers(window, listbox):
   numbers = listbox.get(0, tk.END)
   if len(numbers) < 2:
@@ -274,7 +266,6 @@ def add_all_numbers(window, listbox):
   total = sum(int(number.split(". ")[1]) for number in numbers)
   clear_list(listbox)
   listbox.insert(tk.END, f"{counter}. {total}")
-
 
 def subtract_numbers(window, listbox):
   numbers = listbox.get(0, tk.END)
@@ -288,7 +279,6 @@ def subtract_numbers(window, listbox):
   clear_list(listbox)
   listbox.insert(tk.END, f"{counter}. {total}")
 
-
 def multiply_all_numbers(window, listbox):
   numbers = listbox.get(0, tk.END)
   if len(numbers) < 2:
@@ -301,7 +291,6 @@ def multiply_all_numbers(window, listbox):
     total *= int(number.split(". ")[1])
   clear_list(listbox)
   listbox.insert(tk.END, f"{counter}. {total}")
-
 
 def divide_all_numbers(window, listbox):
   numbers = listbox.get(0, tk.END)
@@ -319,7 +308,6 @@ def divide_all_numbers(window, listbox):
   clear_list(listbox)
   listbox.insert(tk.END, f"{counter}. {total}")
 
-
 def square_all_numbers(window, listbox):
   numbers = listbox.get(0, tk.END)
   if len(numbers) < 1:
@@ -331,7 +319,6 @@ def square_all_numbers(window, listbox):
   for number in numbers:
     square_number = float(number.split(". ")[1])**2
     listbox.insert(tk.END, f"{counter}. {square_number}")
-
 
 algebra_dict = {}
 
@@ -353,7 +340,6 @@ def define_algebraic_letter(window):
 
   tk.Button(letter_window, text="Save", command=save_algebraic_letter).pack()
 
-
 def convert_algebra(window, listbox):
   counter = 1
   items = listbox.get(0, tk.END)
@@ -372,13 +358,10 @@ def convert_algebra(window, listbox):
                          "You can't convert non-defined algebraic numbers!",
                          parent=window)
 
-
 def change_file_extension(window, extension):
   window.file_extension = extension
 
-
 about_window = None
-
 
 def about(window):
   global about_window
@@ -392,26 +375,87 @@ def about(window):
     about_window.protocol("WM_DELETE_WINDOW", close_about)
   title_label = tk.Label(about_window, text="About Number List:")
   title_label.pack()
-  update_label = tk.Label(about_window, text="The 'We Love Files' Update")
+  update_label = tk.Label(about_window, text="The 'We Love More Files' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.61.225")
+  version_label = tk.Label(about_window, text="Version 0.62.887 FINAL BETA")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
   contributor_label2 = tk.Label(about_window, text="Tay Rake 2023")
   contributor_label2.pack()
 
-
 def close_about():
   global about_window
   about_window.destroy()
 
-
 about_window = None
-
+  
+def exit_file(window):
+    window.quit()
 
 def create_new_window():
   window = tk.Tk()
+  window.title("Number List")
+  delete_button = tk.Button(window,
+                            text="Delete Selected Entry",
+                            command=lambda: delete_selected_entry(listbox))
+  delete_button.pack()
+  button_extension = tk.Button(window,
+                               text="Change File Extension",
+                               command=lambda: ask_file_type(window))
+  button_extension.pack()
+
+  menubar = tk.Menu(window)
+  window.config(menu=menubar)
+  file_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="File", menu=file_menu)
+  file_menu.add_command(label="Save",
+                        command=lambda: save_list(window, listbox))
+  file_menu.add_command(label="New", command=lambda: create_new_window())
+  file_menu.add_command(label="Open",
+                        command=lambda: open_file(window, listbox))
+  file_menu.add_command(label="Exit", command=lambda: exit_file(window))
+  help_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Help", menu=help_menu)
+  help_menu.add_command(label="About", command=lambda: about(window))
+  help_menu.add_command(label="Current File Extension",
+                        command=lambda: show_current_file_extension(window))
+  math_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Math", menu=math_menu)
+  math_menu.add_command(label="Add",
+                        command=lambda: add_all_numbers(window, listbox))
+  math_menu.add_command(label="Subtract",
+                        command=lambda: subtract_numbers(window, listbox))
+  math_menu.add_command(label="Multiply",
+                        command=lambda: multiply_all_numbers(window, listbox))
+  math_menu.add_command(label="Divide",
+                        command=lambda: divide_all_numbers(window, listbox))
+  math_menu.add_command(label="Square",
+                        command=lambda: square_all_numbers(window, listbox))
+  math_menu.add_command(label="Define Algebraic Letter",
+                        command=lambda: define_algebraic_letter(window))
+  more_algebra_menu = tk.Menu(math_menu, tearoff=0)
+  math_menu.add_cascade(label="More Algebra...", menu=more_algebra_menu)
+  more_algebra_menu.add_command(
+    label="Convert Algebra", command=lambda: convert_algebra(window, listbox))
+  listbox = tk.Listbox(window)
+  listbox.pack()
+  entry = tk.Entry(window)
+  entry.pack()
+  button_add = tk.Button(window,
+                         text="Add number",
+                         command=lambda: add_number(window, listbox, entry))
+  button_add.pack()
+  save_button = tk.Button(window,
+  text="Save List",
+  command=lambda: save_list(listbox))
+  save_button.pack()
+  button_clear = tk.Button(window,
+                           text="Clear List",
+                           command=lambda: clear_list(listbox))
+  button_clear.pack()
+  
+def create_window():
   window.title("Number List")
   delete_button = tk.Button(window,
                             text="Delete Selected Entry",
@@ -462,6 +506,10 @@ def create_new_window():
                          text="Add number",
                          command=lambda: add_number(window, listbox, entry))
   button_add.pack()
+  save_button = tk.Button(window,
+  text="Save List",
+  command=lambda: save_list(listbox))
+  save_button.pack()
   button_clear = tk.Button(window,
                            text="Clear List",
                            command=lambda: clear_list(listbox))
@@ -538,6 +586,5 @@ messagebox.showinfo(
 
 def main():
   window.mainloop()
-
 
 main()
