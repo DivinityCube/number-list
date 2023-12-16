@@ -574,14 +574,6 @@ def create_window():
 
 
 create_window()
-messagebox.showinfo(
-  "Saving Info",
-  "Defining file extensions have changed again! Starting from Version 0.60, clicking on the 'Change File Extension' button will now change the file extension of the file you are currently working on! No more navigating to the 'File' menu!"
-)
-messagebox.showinfo(
-  "Saving Info #2",
-  "Saving files in general have also changed! Starting from Version 0.59, saving lists can now only be done through the 'File' submenu. Happy saving!"
-)
 
 
 def main():
