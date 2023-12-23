@@ -175,6 +175,7 @@ def save_to_ods(window, listbox):
   spreadsheet.save()
 
 def save_to_xls(window, listbox):
+  global counter
   numbers = listbox.get(0, tk.END)
   if not numbers:
     messagebox.showerror("Error",
@@ -255,6 +256,7 @@ def save_to_odf(window, listbox):
   textdoc.save(filename)
 
 def add_all_numbers(window, listbox):
+  global counter
   numbers = listbox.get(0, tk.END)
   if len(numbers) < 2:
     messagebox.showerror("Error",
@@ -266,6 +268,7 @@ def add_all_numbers(window, listbox):
   listbox.insert(tk.END, f"{counter}. {total}")
 
 def subtract_numbers(window, listbox):
+  global counter
   numbers = listbox.get(0, tk.END)
   if len(numbers) < 2:
     messagebox.showerror("Error",
@@ -278,6 +281,7 @@ def subtract_numbers(window, listbox):
   listbox.insert(tk.END, f"{counter}. {total}")
 
 def multiply_all_numbers(window, listbox):
+  global counter
   numbers = listbox.get(0, tk.END)
   if len(numbers) < 2:
     messagebox.showerror("Error",
@@ -291,6 +295,7 @@ def multiply_all_numbers(window, listbox):
   listbox.insert(tk.END, f"{counter}. {total}")
 
 def divide_all_numbers(window, listbox):
+  global counter
   numbers = listbox.get(0, tk.END)
   if len(numbers) < 2:
     messagebox.showerror("Error",
@@ -307,6 +312,7 @@ def divide_all_numbers(window, listbox):
   listbox.insert(tk.END, f"{counter}. {total}")
 
 def square_all_numbers(window, listbox):
+  global counter
   numbers = listbox.get(0, tk.END)
   if len(numbers) < 1:
     messagebox.showerror("Error",
@@ -338,6 +344,7 @@ def define_algebraic_letter(window):
   tk.Button(letter_window, text="Save", command=save_algebraic_letter).pack()
 
 def convert_algebra(window, listbox):
+  global counter
   counter = 1
   items = listbox.get(0, tk.END)
   converted_items = []
@@ -374,10 +381,8 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'Thematic' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.63.521 FINAL BETA")
-  beta_warning = tk.Label(about_window, text="FINAL BETA! Bugs may still occur!", fg="red")
+  version_label = tk.Label(about_window, text="Version 0.63.521")
   version_label.pack()
-  beta_warning.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
   contributor_label2 = tk.Label(about_window, text="Tay Rake 2023")
@@ -399,6 +404,7 @@ def exit_file(window):
     window.quit()
 
 def create_new_window():
+  global counter
   window = tk.Tk()
   global listbox
   window.title("Number List")
