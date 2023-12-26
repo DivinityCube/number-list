@@ -11,9 +11,7 @@ import ezodf
 from ezodf import Sheet
 from odf.opendocument import OpenDocumentText
 from odf.text import P
-import os
-my_secret = os.environ['BUG_REPORT_API_KEY']
-
+version = '(Version 0.63) '
 window = tk.Tk()
 window.file_extension = ''
 listbox = None
@@ -383,7 +381,7 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'Thematic' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.63.521-1")
+  version_label = tk.Label(about_window, text="Version 0.63.521-2")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -406,6 +404,7 @@ def exit_file(window):
     window.quit()
 
 def report_bug(window):
+  messagebox.showwarning("Telemetry","Some telemetry data is required so developer(s) can fix the bug. By closing this message, you agree to the telemetry data collection." , parent=window)
   bug_window = tk.Toplevel(window)
   bug_window.title("Report a Bug")
   bug_label = tk.Label(bug_window, text="Describe the bug:")
@@ -416,8 +415,9 @@ def report_bug(window):
   save_button.pack()
 
 def save_bug_report(report):
+  global version
   with open('bugs.txt', 'a') as file:
-      file.write(report + "\n")
+      file.write(version + report + "\n")
       messagebox.showinfo("Bug Report", "Bug reported successfully!")
 
 
