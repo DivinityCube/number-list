@@ -11,7 +11,7 @@ import ezodf
 from ezodf import Sheet
 from odf.opendocument import OpenDocumentText
 from odf.text import P
-
+version = '(Version 0.63) '
 window = tk.Tk()
 window.file_extension = ''
 listbox = None
@@ -268,17 +268,18 @@ def add_all_numbers(window, listbox):
   listbox.insert(tk.END, f"{counter}. {total}")
 
 def subtract_numbers(window, listbox):
-  global counter
-  numbers = listbox.get(0, tk.END)
-  if len(numbers) < 2:
-    messagebox.showerror("Error",
-                         "There must be numbers to subtract!",
-                         parent=window)
-    return
-  total = int(numbers[0].split(". ")[1]) - sum(
-    int(number.split(". ")[1]) for number in numbers[1:])
-  clear_list(listbox)
-  listbox.insert(tk.END, f"{counter}. {total}")
+    global counter
+    numbers = listbox.get(0, tk.END)
+    if len(numbers) < 2:
+      messagebox.showerror("Error",
+                           "There must be numbers to subtract!",
+                           parent=window)
+      return
+    total = float(numbers[0].split(". ")[1]) - sum(
+      float(number.split(". ")[1]) for number in numbers[1:])
+    clear_list(listbox)
+    listbox.insert(tk.END, f"{counter}. {total}")
+
 
 def multiply_all_numbers(window, listbox):
   global counter
@@ -326,6 +327,24 @@ def square_all_numbers(window, listbox):
 
 algebra_dict = {}
 
+def numeral_system_conversions(listbox):
+  numbers = listbox.get(0, tk.END)
+  for item in numbers:
+    global counter
+    number = int(item.split(". ")[1])
+    binary_number = "{0:b}".format(number)
+    octal_number = "{0:o}".format(number)
+    hexadecimal_number = "{0:x}".format(number)
+    converted_item = f"Binary: {binary_number}"
+    listbox.insert(tk.END, f"{counter}. {converted_item}")
+    counter += 1
+    converted_item = f"Octal: {octal_number}"
+    listbox.insert(tk.END, f"{counter}. {converted_item}")
+    counter += 1
+    converted_item = f"Hexadecimal: {hexadecimal_number}"
+    listbox.insert(tk.END, f"{counter}. {converted_item}")
+    counter += 1
+
 def define_algebraic_letter(window):
   letter_window = tk.Toplevel(window)
   letter_window.title("Define Algebraic Letter")
@@ -361,7 +380,7 @@ def convert_algebra(window, listbox):
     messagebox.showerror("Error",
                          "You can't convert non-defined algebraic numbers!",
                          parent=window)
-
+  
 def change_file_extension(window, extension):
   window.file_extension = extension
 
@@ -379,10 +398,12 @@ def about(window):
     about_window.protocol("WM_DELETE_WINDOW", close_about)
   title_label = tk.Label(about_window, text="About Number List:")
   title_label.pack()
-  update_label = tk.Label(about_window, text="The 'Thematic' Update")
+  update_label = tk.Label(about_window, text="The 'Let's Convert' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.63.521")
+  version_label = tk.Label(about_window, text="Version 0.64.891 BETA")
   version_label.pack()
+  beta_warning = tk.Label(about_window, text="This is a BETA version! Bugs may occur!", fg='red')
+  beta_warning.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
   contributor_label2 = tk.Label(about_window, text="Tay Rake 2023")
@@ -402,6 +423,24 @@ about_window = None
   
 def exit_file(window):
     window.quit()
+
+def report_bug(window):
+  messagebox.showwarning("Telemetry","Some telemetry data is required so developer(s) can fix the bug. By closing this message, you agree to the telemetry data collection." , parent=window)
+  bug_window = tk.Toplevel(window)
+  bug_window.title("Report a Bug")
+  bug_label = tk.Label(bug_window, text="Describe the bug:")
+  bug_label.pack()
+  bug_entry = tk.Text(bug_window, height=5, width=40)
+  bug_entry.pack()
+  save_button = tk.Button(bug_window, text="Save Report", command=lambda: save_bug_report(bug_entry.get("1.0", tk.END)))
+  save_button.pack()
+
+def save_bug_report(report):
+  global version
+  with open('bugs.txt', 'a') as file:
+      file.write(version + report + "\n")
+      messagebox.showinfo("Bug Report", "Bug reported successfully!")
+
 
 def create_new_window():
   global counter
@@ -450,6 +489,7 @@ def create_new_window():
   math_menu.add_cascade(label="More Algebra...", menu=more_algebra_menu)
   more_algebra_menu.add_command(
     label="Convert Algebra", command=lambda: convert_algebra(window, listbox))
+  math_menu.add_command(label="Numeral System Conversions", command=lambda: numeral_system_conversions(listbox))
   listbox = tk.Listbox(window)
   listbox.pack()
   entry = tk.Entry(window)
@@ -470,6 +510,7 @@ def create_new_window():
   theme_menu.add_command(label="Light Theme", command=lambda: change_theme("light"))
   theme_menu.add_command(label="Dark Theme", command=lambda: change_theme("dark"))
   menubar.add_cascade(label="Themes", menu=theme_menu)
+  
 
 def create_window():
   window.title("Number List")
@@ -491,12 +532,14 @@ def create_window():
                         command=lambda: open_file(window, listbox))
   file_menu.add_command(label="Exit", command=lambda: exit_file(window))
   help_menu = tk.Menu(menubar, tearoff=0)
+  help_menu.add_command(label="Report a Bug", command=lambda: report_bug(window))
   menubar.add_cascade(label="Help", menu=help_menu)
   help_menu.add_command(label="About", command=lambda: about(window))
   help_menu.add_command(label="Current File Extension",
                         command=lambda: show_current_file_extension(window))
   math_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Math", menu=math_menu)
+  math_menu.add_command(label="Numeral System Conversions", command=lambda: numeral_system_conversions(listbox))
   math_menu.add_command(label="Add",
                         command=lambda: add_all_numbers(window, listbox))
   math_menu.add_command(label="Subtract",
