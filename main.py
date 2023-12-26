@@ -11,6 +11,8 @@ import ezodf
 from ezodf import Sheet
 from odf.opendocument import OpenDocumentText
 from odf.text import P
+import os
+my_secret = os.environ['BUG_REPORT_API_KEY']
 
 window = tk.Tk()
 window.file_extension = ''
@@ -381,7 +383,7 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'Thematic' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.63.521")
+  version_label = tk.Label(about_window, text="Version 0.63.521-1")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -402,6 +404,22 @@ about_window = None
   
 def exit_file(window):
     window.quit()
+
+def report_bug(window):
+  bug_window = tk.Toplevel(window)
+  bug_window.title("Report a Bug")
+  bug_label = tk.Label(bug_window, text="Describe the bug:")
+  bug_label.pack()
+  bug_entry = tk.Text(bug_window, height=5, width=40)
+  bug_entry.pack()
+  save_button = tk.Button(bug_window, text="Save Report", command=lambda: save_bug_report(bug_entry.get("1.0", tk.END)))
+  save_button.pack()
+
+def save_bug_report(report):
+  with open('bugs.txt', 'a') as file:
+      file.write(report + "\n")
+      messagebox.showinfo("Bug Report", "Bug reported successfully!")
+
 
 def create_new_window():
   global counter
@@ -470,6 +488,7 @@ def create_new_window():
   theme_menu.add_command(label="Light Theme", command=lambda: change_theme("light"))
   theme_menu.add_command(label="Dark Theme", command=lambda: change_theme("dark"))
   menubar.add_cascade(label="Themes", menu=theme_menu)
+  
 
 def create_window():
   window.title("Number List")
@@ -491,6 +510,7 @@ def create_window():
                         command=lambda: open_file(window, listbox))
   file_menu.add_command(label="Exit", command=lambda: exit_file(window))
   help_menu = tk.Menu(menubar, tearoff=0)
+  help_menu.add_command(label="Report a Bug", command=lambda: report_bug(window))
   menubar.add_cascade(label="Help", menu=help_menu)
   help_menu.add_command(label="About", command=lambda: about(window))
   help_menu.add_command(label="Current File Extension",
