@@ -11,7 +11,7 @@ import ezodf
 from ezodf import Sheet
 from odf.opendocument import OpenDocumentText
 from odf.text import P
-version = '(Version 0.63) '
+version = '(Version 0.64 FINAL BETA) '
 window = tk.Tk()
 window.file_extension = ''
 listbox = None
@@ -329,6 +329,9 @@ algebra_dict = {}
 
 def numeral_system_conversions(listbox):
   numbers = listbox.get(0, tk.END)
+  if not numbers:
+    messagebox.showerror("Error", "There are no entries in the number list!", parent=window)
+    return
   for item in numbers:
     global counter
     number = int(item.split(". ")[1])
@@ -400,13 +403,13 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'Let's Convert' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.64.891 BETA")
+  version_label = tk.Label(about_window, text="Version 0.64.891 FINAL BETA")
   version_label.pack()
-  beta_warning = tk.Label(about_window, text="This is a BETA version! Bugs may occur!", fg='red')
+  beta_warning = tk.Label(about_window, text="FINAL BETA! Bugs may still occur!", fg='red')
   beta_warning.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
-  contributor_label2 = tk.Label(about_window, text="Tay Rake 2023")
+  contributor_label2 = tk.Label(about_window, text="Tay Rake 2023 - 2024")
   contributor_label2.pack()
 
 def change_theme(theme):
@@ -425,7 +428,7 @@ def exit_file(window):
     window.quit()
 
 def report_bug(window):
-  messagebox.showwarning("Telemetry","Some telemetry data is required so developer(s) can fix the bug. By closing this message, you agree to the telemetry data collection." , parent=window)
+  messagebox.showwarning("Telemetry","Some telemetry data is required so developer(s) can fix bugs. Such telemetry data is the application version. By closing this message, you agree to the telemetry data collection." , parent=window)
   bug_window = tk.Toplevel(window)
   bug_window.title("Report a Bug")
   bug_label = tk.Label(bug_window, text="Describe the bug:")
@@ -472,7 +475,7 @@ def create_new_window():
   help_menu.add_command(label="Current File Extension",
                         command=lambda: show_current_file_extension(window))
   math_menu = tk.Menu(menubar, tearoff=0)
-  menubar.add_cascade(label="Math", menu=math_menu)
+  menubar.add_cascade(label="Calculate", menu=math_menu)
   math_menu.add_command(label="Add",
                         command=lambda: add_all_numbers(window, listbox))
   math_menu.add_command(label="Subtract",
@@ -538,8 +541,10 @@ def create_window():
   help_menu.add_command(label="Current File Extension",
                         command=lambda: show_current_file_extension(window))
   math_menu = tk.Menu(menubar, tearoff=0)
-  menubar.add_cascade(label="Math", menu=math_menu)
-  math_menu.add_command(label="Numeral System Conversions", command=lambda: numeral_system_conversions(listbox))
+  menubar.add_cascade(label="Calculate", menu=math_menu)
+  data_menu = tk.Menu(math_menu, tearoff=0)
+  math_menu.add_cascade(label="Data", menu=data_menu)
+  data_menu.add_command(label="Numeral System Conversions", command=lambda: numeral_system_conversions(listbox))
   math_menu.add_command(label="Add",
                         command=lambda: add_all_numbers(window, listbox))
   math_menu.add_command(label="Subtract",
@@ -577,6 +582,8 @@ def create_window():
   theme_menu.add_command(label="Dark Theme", command=lambda: change_theme("dark"))
   menubar.add_cascade(label="Themes", menu=theme_menu)
 create_window()
+
+messagebox.showwarning("Number List","Due to Replit's latest update, Number List has been discontinued.")
 
 def main():
   window.mainloop()
