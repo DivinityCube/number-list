@@ -182,10 +182,7 @@ def save_to_xls(window, listbox):
                          "You can't save an empty list!",
                          parent=window)
     return
-  messagebox.showinfo(
-    "XLS Info",
-    "Replit has a strange bug where if you view the XLS file in the file explorer, download said file, and then choose to open it in Excel, it will corrupt the file. You will have to download the file without opening it through Replit to properly view the file, unfortunately this cannot be remedied at this time.",
-    parent=window)
+
   now = datetime.now()
   timestamp = now.strftime("%Y%m%d%H%M%S")
   filename = f'numbers_{timestamp}.xls'
@@ -583,7 +580,6 @@ def create_window():
   menubar.add_cascade(label="Themes", menu=theme_menu)
 create_window()
 
-messagebox.showwarning("Number List","Due to Replit's latest update, Number List has been discontinued.")
 
 def main():
   window.mainloop()
