@@ -8,6 +8,8 @@ import xlwt
 import xlrd
 import pandas as pd
 import ezodf
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from ezodf import Sheet
 from odf.opendocument import OpenDocumentText
 from odf.text import P
@@ -400,8 +402,10 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'Let's Convert' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.64.891-1")
+  version_label = tk.Label(about_window, text="Version 0.65.288 BETA")
+  beta_warning = tk.Label(about_window, text="BETA version! Bugs may occur!", fg="red")
   version_label.pack()
+  beta_warning.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
   contributor_label2 = tk.Label(about_window, text="Tay Rake 2023 - 2024")
@@ -438,6 +442,34 @@ def save_bug_report(report):
   with open('bugs.txt', 'a') as file:
       file.write(version + report + "\n")
       messagebox.showinfo("Bug Report", "Bug reported successfully!")
+
+def create_graph(window, listbox):
+    numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
+    if len(numbers) < 2:
+        messagebox.showerror("Error", "You need at least two numbers to create a graph!", parent=window)
+        return
+
+    graph_window = tk.Toplevel(window)
+    graph_window.title("Number List Graph")
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.plot(range(1, len(numbers) + 1), numbers, marker='o')
+    ax.set_xlabel('Index')
+    ax.set_ylabel('Value')
+    ax.set_title('Number List Graph')
+
+    canvas = FigureCanvasTkAgg(fig, master=graph_window)
+    canvas_widget = canvas.get_tk_widget()
+    canvas_widget.pack()
+
+    def save_graph():
+      file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png"), ("All files", "*.*")])
+      if file_path:
+          fig.savefig(file_path)
+          messagebox.showinfo("Success", f"Graph saved as {file_path}", parent=graph_window)
+
+    save_button = tk.Button(graph_window, text="Save Graph", command=save_graph)
+    save_button.pack()
 
 
 def create_new_window():
@@ -556,6 +588,9 @@ def create_window():
   math_menu.add_cascade(label="More Algebra...", menu=more_algebra_menu)
   more_algebra_menu.add_command(
     label="Convert Algebra", command=lambda: convert_algebra(window, listbox))
+  graph_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Graph", menu=graph_menu)
+  graph_menu.add_command(label="Create Graph", command=lambda: create_graph(window, listbox))
   listbox = tk.Listbox(window)
   listbox.pack()
   entry = tk.Entry(window)
