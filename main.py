@@ -3,26 +3,114 @@ import csv
 from datetime import datetime
 from tkinter import messagebox, filedialog
 from tkinter import simpledialog
+from tkinter import ttk, colorchooser
+from collections import deque
 import openpyxl
 import xlwt
 import xlrd
 import pandas as pd
 import ezodf
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from ezodf import Sheet
 from odf.opendocument import OpenDocumentText
 from odf.text import P
-version = '(Version 0.63) '
+version = '(Version 0.65) '
 window = tk.Tk()
 window.file_extension = ''
 listbox = None
 counter = 1
 
-def delete_selected_entry(listbox):
+class Command:
+  def execute(self):
+    pass
+
+  def undo(self):
+    pass
+
+class AddNumberCommand(Command):
+  def __init__(self, listbox, number):
+    self.listbox = listbox
+    self.number = number
+    self.index = None
+
+  def execute(self):
+    self.index = self.listbox.size()
+    self.listbox.insert(tk.END, f"{self.index + 1}. {self.number}")
+
+  def undo(self):
+    if self.index is not None:
+      self.listbox.delete(self.index)
+
+class DeleteNumberCommand(Command):
+  def __init__(self, listbox, index):
+    self.listbox = listbox
+    self.index = index
+    self.number = None
+
+  def execute(self):
+    self.number = self.listbox.get(self.index)
+    self.listbox.delete(self.index)
+
+  def undo(self):
+    if self.number:
+      self.listbox.insert(self.index, self.number)
+
+class UndoRedoManager:
+  def __init__(self):
+    self.undo_stack = deque()
+    self.redo_stack = deque()
+
+  def execute(self, command):
+    command.execute()
+    self.undo_stack.append(command)
+    self.redo_stack.clear()
+
+  def undo(self):
+    if not self.undo_stack:
+      return False
+    command = self.undo_stack.pop()
+    command.undo()
+    self.redo_stack.append(command)
+    return True
+  
+  def redo(self):
+    if not self.redo_stack:
+      return False
+    command = self.redo_stack.pop()
+    command.execute()
+    self.undo_stack.append(command)
+    return True
+
+
+
+def delete_selected_entry(listbox, undo_redo_manager):
   selected_index = listbox.curselection()
   if selected_index:
-    listbox.delete(selected_index)
+    command = DeleteNumberCommand(listbox, selected_index[0])
+    undo_redo_manager.execute(command)
   else:
     messagebox.showerror("Error", "No entry selected!", parent=window)
+
+def undo(undo_redo_manager, listbox):
+  if undo_redo_manager.undo():
+    update_listbox_numbers(listbox)
+  else:
+    messagebox.showinfo("Info","Nothing to undo!")
+
+def redo(undo_redo_manager, listbox):
+  if undo_redo_manager.redo():
+    update_listbox_numbers(listbox)
+  else:
+    messagebox.showinfo("Info", "Nothing to redo!")
+
+def update_listbox_numbers(listbox):
+  for i in range(listbox.size()):
+    item = listbox.get(i)
+    number = item.split(". ")[1]
+    listbox.delete(i)
+    listbox.insert(i, f"{i + 1}. {number}")
+
 
 def show_current_file_extension(window):
   messagebox.showinfo(
@@ -68,7 +156,7 @@ def save_list(window, listbox):
   except Exception as e:
     messagebox.showerror("Error", str(e), parent=window)
 
-def add_number(window, listbox, entry):
+def add_number(window, listbox, entry, undo_redo_manager):
   global counter
   item = entry.get()
   if not item:
@@ -77,7 +165,8 @@ def add_number(window, listbox, entry):
                          parent=window)
     return
   if item.isdigit() or float or item in algebra_dict:
-    listbox.insert(tk.END, f"{counter}. {item}")
+    command = AddNumberCommand(listbox, item)
+    undo_redo_manager.execute(command)
     counter += 1
   else:
     messagebox.showerror(
@@ -182,10 +271,7 @@ def save_to_xls(window, listbox):
                          "You can't save an empty list!",
                          parent=window)
     return
-  messagebox.showinfo(
-    "XLS Info",
-    "Replit has a strange bug where if you view the XLS file in the file explorer, download said file, and then choose to open it in Excel, it will corrupt the file. You will have to download the file without opening it through Replit to properly view the file, unfortunately this cannot be remedied at this time.",
-    parent=window)
+
   now = datetime.now()
   timestamp = now.strftime("%Y%m%d%H%M%S")
   filename = f'numbers_{timestamp}.xls'
@@ -268,17 +354,18 @@ def add_all_numbers(window, listbox):
   listbox.insert(tk.END, f"{counter}. {total}")
 
 def subtract_numbers(window, listbox):
-  global counter
-  numbers = listbox.get(0, tk.END)
-  if len(numbers) < 2:
-    messagebox.showerror("Error",
-                         "There must be numbers to subtract!",
-                         parent=window)
-    return
-  total = int(numbers[0].split(". ")[1]) - sum(
-    int(number.split(". ")[1]) for number in numbers[1:])
-  clear_list(listbox)
-  listbox.insert(tk.END, f"{counter}. {total}")
+    global counter
+    numbers = listbox.get(0, tk.END)
+    if len(numbers) < 2:
+      messagebox.showerror("Error",
+                           "There must be numbers to subtract!",
+                           parent=window)
+      return
+    total = float(numbers[0].split(". ")[1]) - sum(
+      float(number.split(". ")[1]) for number in numbers[1:])
+    clear_list(listbox)
+    listbox.insert(tk.END, f"{counter}. {total}")
+
 
 def multiply_all_numbers(window, listbox):
   global counter
@@ -326,6 +413,27 @@ def square_all_numbers(window, listbox):
 
 algebra_dict = {}
 
+def numeral_system_conversions(listbox):
+  numbers = listbox.get(0, tk.END)
+  if not numbers:
+    messagebox.showerror("Error", "There are no entries in the number list!", parent=window)
+    return
+  for item in numbers:
+    global counter
+    number = int(item.split(". ")[1])
+    binary_number = "{0:b}".format(number)
+    octal_number = "{0:o}".format(number)
+    hexadecimal_number = "{0:x}".format(number)
+    converted_item = f"Binary: {binary_number}"
+    listbox.insert(tk.END, f"{counter}. {converted_item}")
+    counter += 1
+    converted_item = f"Octal: {octal_number}"
+    listbox.insert(tk.END, f"{counter}. {converted_item}")
+    counter += 1
+    converted_item = f"Hexadecimal: {hexadecimal_number}"
+    listbox.insert(tk.END, f"{counter}. {converted_item}")
+    counter += 1
+
 def define_algebraic_letter(window):
   letter_window = tk.Toplevel(window)
   letter_window.title("Define Algebraic Letter")
@@ -361,7 +469,7 @@ def convert_algebra(window, listbox):
     messagebox.showerror("Error",
                          "You can't convert non-defined algebraic numbers!",
                          parent=window)
-
+  
 def change_file_extension(window, extension):
   window.file_extension = extension
 
@@ -379,13 +487,15 @@ def about(window):
     about_window.protocol("WM_DELETE_WINDOW", close_about)
   title_label = tk.Label(about_window, text="About Number List:")
   title_label.pack()
-  update_label = tk.Label(about_window, text="The 'Thematic' Update")
+  update_label = tk.Label(about_window, text="The 'Graphing' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.63.521-2")
+  version_label = tk.Label(about_window, text="Version 0.65.288 FINAL BETA")
+  beta_warning = tk.Label(about_window, text=" FINAL BETA version! Bugs may still occur!", fg="red")
   version_label.pack()
+  beta_warning.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
-  contributor_label2 = tk.Label(about_window, text="Tay Rake 2023")
+  contributor_label2 = tk.Label(about_window, text="Tay Rake 2023 - 2024")
   contributor_label2.pack()
 
 def change_theme(theme):
@@ -404,7 +514,7 @@ def exit_file(window):
     window.quit()
 
 def report_bug(window):
-  messagebox.showwarning("Telemetry","Some telemetry data is required so developer(s) can fix the bug. By closing this message, you agree to the telemetry data collection." , parent=window)
+  messagebox.showwarning("Telemetry","Some telemetry data is required so developer(s) can fix bugs. Such telemetry data is the application version. By closing this message, you agree to the telemetry data collection." , parent=window)
   bug_window = tk.Toplevel(window)
   bug_window.title("Report a Bug")
   bug_label = tk.Label(bug_window, text="Describe the bug:")
@@ -420,15 +530,117 @@ def save_bug_report(report):
       file.write(version + report + "\n")
       messagebox.showinfo("Bug Report", "Bug reported successfully!")
 
+def create_graph(window, listbox):
+    numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
+    if len(numbers) < 2:
+        messagebox.showerror("Error", "You need at least two numbers to create a graph!", parent=window)
+        return
+
+    graph_window = tk.Toplevel(window)
+    graph_window.title("Number List Graph")
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.plot(range(1, len(numbers) + 1), numbers, marker='o')
+    ax.set_xlabel('Index')
+    ax.set_ylabel('Value')
+    ax.set_title('Number List Graph')
+
+    canvas = FigureCanvasTkAgg(fig, master=graph_window)
+    canvas_widget = canvas.get_tk_widget()
+    canvas_widget.pack()
+  
+def create_advanced_graph(window, listbox):
+    numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
+    if len(numbers) < 2:
+        messagebox.showerror("Error", "You need at least two numbers to create a graph!", parent=window)
+        return
+
+    graph_window = tk.Toplevel(window)
+    graph_window.title("Advanced Graph")
+    graph_window.geometry("800x600")
+
+    graph_types = ["Line", "Bar", "Scatter", "Pie"]
+    graph_type_var = tk.StringVar(value="Line")
+    ttk.Label(graph_window, text="Graph Type:").pack()
+    type_combo = ttk.Combobox(graph_window, textvariable=graph_type_var, values=graph_types)
+    type_combo.pack()
+
+    color_var = tk.StringVar(value="#1f77b4")
+    ttk.Label(graph_window, text="Graph Color:").pack()
+    color_button = ttk.Button(graph_window, text="Choose Color")
+    color_button.pack()
+
+    def choose_color():
+        color = colorchooser.askcolor(color_var.get())[1]
+        if color:
+            color_var.set(color)
+        update_graph()
+
+    color_button.config(command=choose_color)
+
+    title_var = tk.StringVar(value="Number List Graph")
+    ttk.Label(graph_window, text="Graph Title:").pack()
+    title_entry = ttk.Entry(graph_window, textvariable=title_var)
+    title_entry.pack()
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    canvas = FigureCanvasTkAgg(fig, master=graph_window)
+    canvas_widget = canvas.get_tk_widget()
+    canvas_widget.pack(expand=True, fill=tk.BOTH)
+
+    def update_graph(*args):
+        ax.clear()
+        graph_type = graph_type_var.get()
+        color = color_var.get()
+        title = title_var.get()
+
+        if graph_type == "Line":
+            ax.plot(range(1, len(numbers) + 1), numbers, color=color, marker='o')
+        elif graph_type == "Bar":
+            ax.bar(range(1, len(numbers) + 1), numbers, color=color)
+        elif graph_type == "Scatter":
+            ax.scatter(range(1, len(numbers) + 1), numbers, color=color)
+        elif graph_type == "Pie":
+            ax.pie(numbers, labels=[f"Item {i+1}" for i in range(len(numbers))], autopct='%1.1f%%', colors=[color])
+
+        ax.set_title(title)
+        if graph_type != "Pie":
+            ax.set_xlabel('Index')
+            ax.set_ylabel('Value')
+        
+        fig.tight_layout()
+        canvas.draw()
+
+    graph_type_var.trace_add("write", update_graph)
+    title_var.trace_add("write", update_graph)
+
+    update_button = ttk.Button(graph_window, text="Update Graph", command=update_graph)
+    update_button.pack()
+
+    def save_graph():
+        file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png"), ("All files", "*.*")])
+        if file_path:
+            fig.savefig(file_path)
+            messagebox.showinfo("Success", f"Graph saved as {file_path}", parent=graph_window)
+
+    save_button = ttk.Button(graph_window, text="Save Graph", command=save_graph)
+    save_button.pack()
+
+    update_graph()
 
 def create_new_window():
   global counter
   window = tk.Tk()
   global listbox
   window.title("Number List")
+  undo_redo_manager = UndoRedoManager()
+  undo_button = tk.Button(window, text="Undo", command=lambda: undo(undo_redo_manager, listbox))
+  undo_button.pack()
+  redo_button = tk.Button(window, text="Redo", command=lambda: redo(undo_redo_manager, listbox))
+  redo_button.pack()
   delete_button = tk.Button(window,
                             text="Delete Selected Entry",
-                            command=lambda: delete_selected_entry(listbox))
+                            command=lambda: delete_selected_entry(listbox, undo, undo_redo_manager))
   delete_button.pack()
   button_extension = tk.Button(window,
                                text="Change File Extension",
@@ -445,13 +657,17 @@ def create_new_window():
   file_menu.add_command(label="Open",
                         command=lambda: open_file(window, listbox))
   file_menu.add_command(label="Exit", command=lambda: exit_file(window))
+  edit_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Edit", menu=edit_menu)
+  edit_menu.add_command(label="Undo", command=lambda: undo(undo_redo_manager, listbox))
+  edit_menu.add_command(label="Redo", command=lambda: redo(undo_redo_manager, listbox))
   help_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Help", menu=help_menu)
   help_menu.add_command(label="About", command=lambda: about(window))
   help_menu.add_command(label="Current File Extension",
                         command=lambda: show_current_file_extension(window))
   math_menu = tk.Menu(menubar, tearoff=0)
-  menubar.add_cascade(label="Math", menu=math_menu)
+  menubar.add_cascade(label="Calculate", menu=math_menu)
   math_menu.add_command(label="Add",
                         command=lambda: add_all_numbers(window, listbox))
   math_menu.add_command(label="Subtract",
@@ -468,13 +684,17 @@ def create_new_window():
   math_menu.add_cascade(label="More Algebra...", menu=more_algebra_menu)
   more_algebra_menu.add_command(
     label="Convert Algebra", command=lambda: convert_algebra(window, listbox))
+  math_menu.add_command(label="Numeral System Conversions", command=lambda: numeral_system_conversions(listbox))
+  graph_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Graph", menu=graph_menu)
+  graph_menu.add_command(label="Create Graph", command=lambda: create_graph(window, listbox))
+  graph_menu.add_command(label="Create Advanced Graph", command=lambda: create_advanced_graph(window, listbox))
   listbox = tk.Listbox(window)
   listbox.pack()
   entry = tk.Entry(window)
   entry.pack()
-  button_add = tk.Button(window,
-                         text="Add number",
-                         command=lambda: add_number(window, listbox, entry))
+  button_add = tk.Button(window, text="Add number", 
+                         command=lambda: add_number(window, listbox, entry, undo_redo_manager))
   button_add.pack()
   save_button = tk.Button(window,
   text="Save List",
@@ -493,9 +713,14 @@ def create_new_window():
 def create_window():
   window.title("Number List")
   global listbox
+  undo_redo_manager = UndoRedoManager()
+  undo_button = tk.Button(window, text="Undo", command=lambda: undo(undo_redo_manager, listbox))
+  undo_button.pack()
+  redo_button = tk.Button(window, text="Redo", command=lambda: redo(undo_redo_manager, listbox))
+  redo_button.pack()
   delete_button = tk.Button(window,
                             text="Delete Selected Entry",
-                            command=lambda: delete_selected_entry(listbox))
+                            command=lambda: delete_selected_entry(listbox, undo, undo_redo_manager))
   delete_button.pack()
   button_extension = tk.Button(window,
                                text="Change File Extension",
@@ -509,6 +734,10 @@ def create_window():
   file_menu.add_command(label="Open",
                         command=lambda: open_file(window, listbox))
   file_menu.add_command(label="Exit", command=lambda: exit_file(window))
+  edit_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Edit", menu=edit_menu)
+  edit_menu.add_command(label="Undo", command=lambda: undo(undo_redo_manager, listbox))
+  edit_menu.add_command(label="Redo", command=lambda: redo(undo_redo_manager, listbox))
   help_menu = tk.Menu(menubar, tearoff=0)
   help_menu.add_command(label="Report a Bug", command=lambda: report_bug(window))
   menubar.add_cascade(label="Help", menu=help_menu)
@@ -516,7 +745,10 @@ def create_window():
   help_menu.add_command(label="Current File Extension",
                         command=lambda: show_current_file_extension(window))
   math_menu = tk.Menu(menubar, tearoff=0)
-  menubar.add_cascade(label="Math", menu=math_menu)
+  menubar.add_cascade(label="Calculate", menu=math_menu)
+  data_menu = tk.Menu(math_menu, tearoff=0)
+  math_menu.add_cascade(label="Data", menu=data_menu)
+  data_menu.add_command(label="Numeral System Conversions", command=lambda: numeral_system_conversions(listbox))
   math_menu.add_command(label="Add",
                         command=lambda: add_all_numbers(window, listbox))
   math_menu.add_command(label="Subtract",
@@ -533,13 +765,16 @@ def create_window():
   math_menu.add_cascade(label="More Algebra...", menu=more_algebra_menu)
   more_algebra_menu.add_command(
     label="Convert Algebra", command=lambda: convert_algebra(window, listbox))
+  graph_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Graph", menu=graph_menu)
+  graph_menu.add_command(label="Create Graph", command=lambda: create_graph(window, listbox))
+  graph_menu.add_command(label="Create Advanced Graph", command=lambda: create_advanced_graph(window, listbox))
   listbox = tk.Listbox(window)
   listbox.pack()
   entry = tk.Entry(window)
   entry.pack()
-  button_add = tk.Button(window,
-                         text="Add number",
-                         command=lambda: add_number(window, listbox, entry))
+  button_add = tk.Button(window, text="Add number", 
+                         command=lambda: add_number(window, listbox, entry, undo_redo_manager))
   button_add.pack()
   save_button = tk.Button(window,
   text="Save List",
@@ -554,6 +789,7 @@ def create_window():
   theme_menu.add_command(label="Dark Theme", command=lambda: change_theme("dark"))
   menubar.add_cascade(label="Themes", menu=theme_menu)
 create_window()
+
 
 def main():
   window.mainloop()
