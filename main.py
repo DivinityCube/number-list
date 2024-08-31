@@ -3,6 +3,7 @@ import csv
 from datetime import datetime
 from tkinter import messagebox, filedialog
 from tkinter import simpledialog
+from tkinter import ttk, colorchooser
 import openpyxl
 import xlwt
 import xlrd
@@ -400,10 +401,10 @@ def about(window):
     about_window.protocol("WM_DELETE_WINDOW", close_about)
   title_label = tk.Label(about_window, text="About Number List:")
   title_label.pack()
-  update_label = tk.Label(about_window, text="The 'Let's Convert' Update")
+  update_label = tk.Label(about_window, text="The 'Graphing' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.65.288 BETA")
-  beta_warning = tk.Label(about_window, text="BETA version! Bugs may occur!", fg="red")
+  version_label = tk.Label(about_window, text="Version 0.65.288 FINAL BETA")
+  beta_warning = tk.Label(about_window, text=" FINAL BETA version! Bugs may still occur!", fg="red")
   version_label.pack()
   beta_warning.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
@@ -461,16 +462,85 @@ def create_graph(window, listbox):
     canvas = FigureCanvasTkAgg(fig, master=graph_window)
     canvas_widget = canvas.get_tk_widget()
     canvas_widget.pack()
+  
+def create_advanced_graph(window, listbox):
+    numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
+    if len(numbers) < 2:
+        messagebox.showerror("Error", "You need at least two numbers to create a graph!", parent=window)
+        return
+
+    graph_window = tk.Toplevel(window)
+    graph_window.title("Advanced Graph")
+    graph_window.geometry("800x600")
+
+    graph_types = ["Line", "Bar", "Scatter", "Pie"]
+    graph_type_var = tk.StringVar(value="Line")
+    ttk.Label(graph_window, text="Graph Type:").pack()
+    type_combo = ttk.Combobox(graph_window, textvariable=graph_type_var, values=graph_types)
+    type_combo.pack()
+
+    color_var = tk.StringVar(value="#1f77b4")
+    ttk.Label(graph_window, text="Graph Color:").pack()
+    color_button = ttk.Button(graph_window, text="Choose Color")
+    color_button.pack()
+
+    def choose_color():
+        color = colorchooser.askcolor(color_var.get())[1]
+        if color:
+            color_var.set(color)
+        update_graph()
+
+    color_button.config(command=choose_color)
+
+    title_var = tk.StringVar(value="Number List Graph")
+    ttk.Label(graph_window, text="Graph Title:").pack()
+    title_entry = ttk.Entry(graph_window, textvariable=title_var)
+    title_entry.pack()
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    canvas = FigureCanvasTkAgg(fig, master=graph_window)
+    canvas_widget = canvas.get_tk_widget()
+    canvas_widget.pack(expand=True, fill=tk.BOTH)
+
+    def update_graph(*args):
+        ax.clear()
+        graph_type = graph_type_var.get()
+        color = color_var.get()
+        title = title_var.get()
+
+        if graph_type == "Line":
+            ax.plot(range(1, len(numbers) + 1), numbers, color=color, marker='o')
+        elif graph_type == "Bar":
+            ax.bar(range(1, len(numbers) + 1), numbers, color=color)
+        elif graph_type == "Scatter":
+            ax.scatter(range(1, len(numbers) + 1), numbers, color=color)
+        elif graph_type == "Pie":
+            ax.pie(numbers, labels=[f"Item {i+1}" for i in range(len(numbers))], autopct='%1.1f%%', colors=[color])
+
+        ax.set_title(title)
+        if graph_type != "Pie":
+            ax.set_xlabel('Index')
+            ax.set_ylabel('Value')
+        
+        fig.tight_layout()
+        canvas.draw()
+
+    graph_type_var.trace_add("write", update_graph)
+    title_var.trace_add("write", update_graph)
+
+    update_button = ttk.Button(graph_window, text="Update Graph", command=update_graph)
+    update_button.pack()
 
     def save_graph():
-      file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png"), ("All files", "*.*")])
-      if file_path:
-          fig.savefig(file_path)
-          messagebox.showinfo("Success", f"Graph saved as {file_path}", parent=graph_window)
+        file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png"), ("All files", "*.*")])
+        if file_path:
+            fig.savefig(file_path)
+            messagebox.showinfo("Success", f"Graph saved as {file_path}", parent=graph_window)
 
-    save_button = tk.Button(graph_window, text="Save Graph", command=save_graph)
+    save_button = ttk.Button(graph_window, text="Save Graph", command=save_graph)
     save_button.pack()
 
+    update_graph()
 
 def create_new_window():
   global counter
@@ -520,6 +590,10 @@ def create_new_window():
   more_algebra_menu.add_command(
     label="Convert Algebra", command=lambda: convert_algebra(window, listbox))
   math_menu.add_command(label="Numeral System Conversions", command=lambda: numeral_system_conversions(listbox))
+  graph_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Graph", menu=graph_menu)
+  graph_menu.add_command(label="Create Graph", command=lambda: create_graph(window, listbox))
+  graph_menu.add_command(label="Create Advanced Graph", command=lambda: create_advanced_graph(window, listbox))
   listbox = tk.Listbox(window)
   listbox.pack()
   entry = tk.Entry(window)
@@ -591,6 +665,7 @@ def create_window():
   graph_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Graph", menu=graph_menu)
   graph_menu.add_command(label="Create Graph", command=lambda: create_graph(window, listbox))
+  graph_menu.add_command(label="Create Advanced Graph", command=lambda: create_advanced_graph(window, listbox))
   listbox = tk.Listbox(window)
   listbox.pack()
   entry = tk.Entry(window)
