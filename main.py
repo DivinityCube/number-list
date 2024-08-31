@@ -4,6 +4,7 @@ from datetime import datetime
 from tkinter import messagebox, filedialog
 from tkinter import simpledialog
 from tkinter import ttk, colorchooser
+from collections import deque
 import openpyxl
 import xlwt
 import xlrd
@@ -20,12 +21,96 @@ window.file_extension = ''
 listbox = None
 counter = 1
 
-def delete_selected_entry(listbox):
+class Command:
+  def execute(self):
+    pass
+
+  def undo(self):
+    pass
+
+class AddNumberCommand(Command):
+  def __init__(self, listbox, number):
+    self.listbox = listbox
+    self.number = number
+    self.index = None
+
+  def execute(self):
+    self.index = self.listbox.size()
+    self.listbox.insert(tk.END, f"{self.index + 1}. {self.number}")
+
+  def undo(self):
+    if self.index is not None:
+      self.listbox.delete(self.index)
+
+class DeleteNumberCommand(Command):
+  def __init__(self, listbox, index):
+    self.listbox = listbox
+    self.index = index
+    self.number = None
+
+  def execute(self):
+    self.number = self.listbox.get(self.index)
+    self.listbox.delete(self.index)
+
+  def undo(self):
+    if self.number:
+      self.listbox.insert(self.index, self.number)
+
+class UndoRedoManager:
+  def __init__(self):
+    self.undo_stack = deque()
+    self.redo_stack = deque()
+
+  def execute(self, command):
+    command.execute()
+    self.undo_stack.append(command)
+    self.redo_stack.clear()
+
+  def undo(self):
+    if not self.undo_stack:
+      return False
+    command = self.undo_stack.pop()
+    command.undo()
+    self.redo_stack.append(command)
+    return True
+  
+  def redo(self):
+    if not self.redo_stack:
+      return False
+    command = self.redo_stack.pop()
+    command.execute()
+    self.undo_stack.append(command)
+    return True
+
+
+
+def delete_selected_entry(listbox, undo_redo_manager):
   selected_index = listbox.curselection()
   if selected_index:
-    listbox.delete(selected_index)
+    command = DeleteNumberCommand(listbox, selected_index[0])
+    undo_redo_manager.execute(command)
   else:
     messagebox.showerror("Error", "No entry selected!", parent=window)
+
+def undo(undo_redo_manager, listbox):
+  if undo_redo_manager.undo():
+    update_listbox_numbers(listbox)
+  else:
+    messagebox.showinfo("Info","Nothing to undo!")
+
+def redo(undo_redo_manager, listbox):
+  if undo_redo_manager.redo():
+    update_listbox_numbers(listbox)
+  else:
+    messagebox.showinfo("Info", "Nothing to redo!")
+
+def update_listbox_numbers(listbox):
+  for i in range(listbox.size()):
+    item = listbox.get(i)
+    number = item.split(". ")[1]
+    listbox.delete(i)
+    listbox.insert(i, f"{i + 1}. {number}")
+
 
 def show_current_file_extension(window):
   messagebox.showinfo(
@@ -71,7 +156,7 @@ def save_list(window, listbox):
   except Exception as e:
     messagebox.showerror("Error", str(e), parent=window)
 
-def add_number(window, listbox, entry):
+def add_number(window, listbox, entry, undo_redo_manager):
   global counter
   item = entry.get()
   if not item:
@@ -80,7 +165,8 @@ def add_number(window, listbox, entry):
                          parent=window)
     return
   if item.isdigit() or float or item in algebra_dict:
-    listbox.insert(tk.END, f"{counter}. {item}")
+    command = AddNumberCommand(listbox, item)
+    undo_redo_manager.execute(command)
     counter += 1
   else:
     messagebox.showerror(
@@ -547,9 +633,14 @@ def create_new_window():
   window = tk.Tk()
   global listbox
   window.title("Number List")
+  undo_redo_manager = UndoRedoManager()
+  undo_button = tk.Button(window, text="Undo", command=lambda: undo(undo_redo_manager, listbox))
+  undo_button.pack()
+  redo_button = tk.Button(window, text="Redo", command=lambda: redo(undo_redo_manager, listbox))
+  redo_button.pack()
   delete_button = tk.Button(window,
                             text="Delete Selected Entry",
-                            command=lambda: delete_selected_entry(listbox))
+                            command=lambda: delete_selected_entry(listbox, undo, undo_redo_manager))
   delete_button.pack()
   button_extension = tk.Button(window,
                                text="Change File Extension",
@@ -566,6 +657,10 @@ def create_new_window():
   file_menu.add_command(label="Open",
                         command=lambda: open_file(window, listbox))
   file_menu.add_command(label="Exit", command=lambda: exit_file(window))
+  edit_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Edit", menu=edit_menu)
+  edit_menu.add_command(label="Undo", command=lambda: undo(undo_redo_manager, listbox))
+  edit_menu.add_command(label="Redo", command=lambda: redo(undo_redo_manager, listbox))
   help_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Help", menu=help_menu)
   help_menu.add_command(label="About", command=lambda: about(window))
@@ -598,9 +693,8 @@ def create_new_window():
   listbox.pack()
   entry = tk.Entry(window)
   entry.pack()
-  button_add = tk.Button(window,
-                         text="Add number",
-                         command=lambda: add_number(window, listbox, entry))
+  button_add = tk.Button(window, text="Add number", 
+                         command=lambda: add_number(window, listbox, entry, undo_redo_manager))
   button_add.pack()
   save_button = tk.Button(window,
   text="Save List",
@@ -619,9 +713,14 @@ def create_new_window():
 def create_window():
   window.title("Number List")
   global listbox
+  undo_redo_manager = UndoRedoManager()
+  undo_button = tk.Button(window, text="Undo", command=lambda: undo(undo_redo_manager, listbox))
+  undo_button.pack()
+  redo_button = tk.Button(window, text="Redo", command=lambda: redo(undo_redo_manager, listbox))
+  redo_button.pack()
   delete_button = tk.Button(window,
                             text="Delete Selected Entry",
-                            command=lambda: delete_selected_entry(listbox))
+                            command=lambda: delete_selected_entry(listbox, undo, undo_redo_manager))
   delete_button.pack()
   button_extension = tk.Button(window,
                                text="Change File Extension",
@@ -635,6 +734,10 @@ def create_window():
   file_menu.add_command(label="Open",
                         command=lambda: open_file(window, listbox))
   file_menu.add_command(label="Exit", command=lambda: exit_file(window))
+  edit_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Edit", menu=edit_menu)
+  edit_menu.add_command(label="Undo", command=lambda: undo(undo_redo_manager, listbox))
+  edit_menu.add_command(label="Redo", command=lambda: redo(undo_redo_manager, listbox))
   help_menu = tk.Menu(menubar, tearoff=0)
   help_menu.add_command(label="Report a Bug", command=lambda: report_bug(window))
   menubar.add_cascade(label="Help", menu=help_menu)
@@ -670,9 +773,8 @@ def create_window():
   listbox.pack()
   entry = tk.Entry(window)
   entry.pack()
-  button_add = tk.Button(window,
-                         text="Add number",
-                         command=lambda: add_number(window, listbox, entry))
+  button_add = tk.Button(window, text="Add number", 
+                         command=lambda: add_number(window, listbox, entry, undo_redo_manager))
   button_add.pack()
   save_button = tk.Button(window,
   text="Save List",
