@@ -487,9 +487,10 @@ def about(window):
     about_window.protocol("WM_DELETE_WINDOW", close_about)
   title_label = tk.Label(about_window, text="About Number List:")
   title_label.pack()
-  update_label = tk.Label(about_window, text="The 'Graphing' Update")
+  update_label = tk.Label(about_window, text="The 'Sorts & Filters' Update")
   update_label.pack()
   version_label = tk.Label(about_window, text="Version 0.65.288-1")
+  version_label = tk.Label(about_window, text="Version 0.66.711 BETA")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -626,6 +627,31 @@ def create_advanced_graph(window, listbox):
 
     update_graph()
 
+def sort_numbers_ascending(window, listbox):
+  numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
+  numbers.sort()
+  update_listbox_with_numbers(listbox, numbers)
+
+def sort_numbers_ascending(window, listbox):
+  numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
+  numbers.sort()
+  update_listbox_with_numbers(listbox, numbers)
+
+def update_listbox_with_numbers(listbox, numbers):
+  listbox.delete(0, tk.END)
+  for i, number in enumerate(numbers, 1):
+    listbox.insert(tk.END, f"{i}, {number}")
+
+def filter_even_numbers(window, listbox):
+  numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
+  even_numbers = [num for num in numbers if num % 2 == 0]
+  update_listbox_with_numbers(listbox, even_numbers)
+
+def filter_odd_numbers(window, listbox):
+  numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
+  odd_numbers = [num for num in numbers if num % 2 != 0]
+  update_listbox_with_numbers(listbox, odd_numbers)
+
 def create_new_window():
   global counter
   window = tk.Tk()
@@ -718,8 +744,8 @@ def create_window():
   redo_button.pack()
   delete_button = tk.Button(window,
                             text="Delete Selected Entry",
-                            command=lambda: delete_selected_entry(listbox, undo, undo_redo_manager))
-  delete_button.pack()
+                            command=lambda: delete_selected_entry(listbox, undo_redo_manager))
+  delete_button.pack()  
   button_extension = tk.Button(window,
                                text="Change File Extension",
                                command=lambda: ask_file_type(window))
