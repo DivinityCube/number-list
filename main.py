@@ -15,7 +15,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from ezodf import Sheet
 from odf.opendocument import OpenDocumentText
 from odf.text import P
-version = '(Version 0.65) '
+version = '(Version 0.66) '
 window = tk.Tk()
 window.file_extension = ''
 listbox = None
@@ -489,7 +489,7 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'Sorts & Filters' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.66.711 BETA")
+  version_label = tk.Label(about_window, text="Version 0.66.711 BETA 2")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -631,7 +631,7 @@ def sort_numbers_ascending(window, listbox):
   numbers.sort()
   update_listbox_with_numbers(listbox, numbers)
 
-def sort_numbers_ascending(window, listbox):
+def sort_numbers_descending(window, listbox):
   numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
   numbers.sort()
   update_listbox_with_numbers(listbox, numbers)
@@ -708,6 +708,10 @@ def create_new_window():
   more_algebra_menu.add_command(
     label="Convert Algebra", command=lambda: convert_algebra(window, listbox))
   math_menu.add_command(label="Numeral System Conversions", command=lambda: numeral_system_conversions(listbox))
+  sort_menu = tk.Menu(math_menu, tearoff=0)
+  math_menu.add_cascade(label="Sort", menu=sort_menu)
+  sort_menu.add_command(label="Ascending", command=lambda: sort_numbers_ascending(window, listbox))
+  sort_menu.add_command(label="Descending", command=lambda: sort_numbers_descending(window, listbox))
   graph_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Graph", menu=graph_menu)
   graph_menu.add_command(label="Create Graph", command=lambda: create_graph(window, listbox))
@@ -788,6 +792,10 @@ def create_window():
   math_menu.add_cascade(label="More Algebra...", menu=more_algebra_menu)
   more_algebra_menu.add_command(
     label="Convert Algebra", command=lambda: convert_algebra(window, listbox))
+  sort_menu = tk.Menu(math_menu, tearoff=0)
+  math_menu.add_cascade(label="Sort", menu=sort_menu)
+  sort_menu.add_command(label="Ascending", command=lambda: sort_numbers_ascending(window, listbox))
+  sort_menu.add_command(label="Descending", command=lambda: sort_numbers_descending(window, listbox))
   graph_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Graph", menu=graph_menu)
   graph_menu.add_command(label="Create Graph", command=lambda: create_graph(window, listbox))
