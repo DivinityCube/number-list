@@ -468,7 +468,7 @@ def add_all_numbers(window, listbox, history_manager):
                          parent=window)
     return
   total = sum(int(number.split(". ")[1]) for number in numbers)
-  clear_list(listbox)
+  clear_list(listbox, history_manager)
   listbox.insert(tk.END, f"{counter}. {total}")
   history_manager.add_state(list(listbox.get(0, tk.END)))
 
@@ -482,7 +482,7 @@ def subtract_numbers(window, listbox, history_manager):
       return
     total = float(numbers[0].split(". ")[1]) - sum(
       float(number.split(". ")[1]) for number in numbers[1:])
-    clear_list(listbox)
+    clear_list(listbox, history_manager)
     listbox.insert(tk.END, f"{counter}. {total}")
     history_manager.add_state(list(listbox.get(0, tk.END)))
 
@@ -498,7 +498,7 @@ def multiply_all_numbers(window, listbox, history_manager):
   total = 1
   for number in numbers:
     total *= int(number.split(". ")[1])
-  clear_list(listbox)
+  clear_list(listbox, history_manager)
   listbox.insert(tk.END, f"{counter}. {total}")
   history_manager.add_state(list(listbox.get(0, tk.END)))
 
@@ -516,7 +516,7 @@ def divide_all_numbers(window, listbox, history_manager):
       messagebox.showerror("Error", "Cannot divide by zero!", parent=window)
       return
     total /= int(number.split(". ")[1])
-  clear_list(listbox)
+  clear_list(listbox, history_manager)
   listbox.insert(tk.END, f"{counter}. {total}")
   history_manager.add_state(list(listbox.get(0, tk.END)))
 
@@ -528,7 +528,7 @@ def square_all_numbers(window, listbox, history_manager):
                          "There must be at least one number to square!",
                          parent=window)
     return
-  clear_list(listbox)
+  clear_list(listbox, history_manager)
   for number in numbers:
     square_number = float(number.split(". ")[1])**2
     listbox.insert(tk.END, f"{counter}. {square_number}")
@@ -613,9 +613,9 @@ def about(window):
     about_window.protocol("WM_DELETE_WINDOW", close_about)
   title_label = tk.Label(about_window, text="About Number List:")
   title_label.pack()
-  update_label = tk.Label(about_window, text="The 'Sorts & Filters' Update")
+  update_label = tk.Label(about_window, text="The 'History' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.67.244 BETA 1")
+  version_label = tk.Label(about_window, text="Version 0.67.244 BETA 2")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -913,17 +913,17 @@ def create_window():
   menubar.add_cascade(label="Calculate", menu=math_menu)
   data_menu = tk.Menu(math_menu, tearoff=0)
   math_menu.add_cascade(label="Data", menu=data_menu)
-  data_menu.add_command(label="Numeral System Conversions", command=lambda: numeral_system_conversions(listbox))
+  data_menu.add_command(label="Numeral System Conversions", command=lambda: numeral_system_conversions(listbox, history_manager))
   math_menu.add_command(label="Add",
-                        command=lambda: add_all_numbers(window, listbox))
+                        command=lambda: add_all_numbers(window, listbox, history_manager))
   math_menu.add_command(label="Subtract",
-                        command=lambda: subtract_numbers(window, listbox))
+                        command=lambda: subtract_numbers(window, listbox, history_manager))
   math_menu.add_command(label="Multiply",
-                        command=lambda: multiply_all_numbers(window, listbox))
+                        command=lambda: multiply_all_numbers(window, listbox, history_manager))
   math_menu.add_command(label="Divide",
-                        command=lambda: divide_all_numbers(window, listbox))
+                        command=lambda: divide_all_numbers(window, listbox, history_manager))
   math_menu.add_command(label="Square",
-                        command=lambda: square_all_numbers(window, listbox))
+                        command=lambda: square_all_numbers(window, listbox, history_manager))
   math_menu.add_command(label="Define Algebraic Letter",
                         command=lambda: define_algebraic_letter(window))
   more_algebra_menu = tk.Menu(math_menu, tearoff=0)
@@ -932,17 +932,22 @@ def create_window():
     label="Convert Algebra", command=lambda: convert_algebra(window, listbox))
   sort_menu = tk.Menu(math_menu, tearoff=0)
   math_menu.add_cascade(label="Sort", menu=sort_menu)
-  sort_menu.add_command(label="Ascending", command=lambda: sort_numbers_ascending(window, listbox, undo_redo_manager))
-  sort_menu.add_command(label="Descending", command=lambda: sort_numbers_descending(window, listbox, undo_redo_manager))
+  sort_menu.add_command(label="Ascending", command=lambda: sort_numbers_ascending(window, listbox, undo_redo_manager, history_manager))
+  sort_menu.add_command(label="Descending", command=lambda: sort_numbers_descending(window, listbox, undo_redo_manager, history_manager))
   filter_menu = tk.Menu(math_menu, tearoff=0)
   math_menu.add_cascade(label="Filter", menu=filter_menu)
-  filter_menu.add_command(label="Even Numbers", command=lambda: filter_even_numbers(window, listbox, undo_redo_manager))
-  filter_menu.add_command(label="Odd Numbers", command=lambda: filter_odd_numbers(window, listbox, undo_redo_manager))
-  filter_menu.add_command(label="Custom Range", command=lambda: filter_custom_range(window, listbox, undo_redo_manager))
+  filter_menu.add_command(label="Even Numbers", command=lambda: filter_even_numbers(window, listbox, undo_redo_manager, history_manager))
+  filter_menu.add_command(label="Odd Numbers", command=lambda: filter_odd_numbers(window, listbox, undo_redo_manager, history_manager))
+  filter_menu.add_command(label="Custom Range", command=lambda: filter_custom_range(window, listbox, undo_redo_manager, history_manager))
   graph_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Graph", menu=graph_menu)
   graph_menu.add_command(label="Create Graph", command=lambda: create_graph(window, listbox))
   graph_menu.add_command(label="Create Advanced Graph", command=lambda: create_advanced_graph(window, listbox))
+  history_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="History", menu=history_menu)
+  history_menu.add_cascade(label="View History", command=lambda: view_history(history_manager))
+  history_menu.add_cascade(label="Undo to Previous State", command=lambda: restore_history(history_manager.undo()))
+  history_menu.add_cascade(label="Redo to Next State", command=lambda: restore_history(history_manager.redo()))
   listbox = tk.Listbox(window)
   listbox.pack()
   entry = tk.Entry(window)
@@ -956,7 +961,7 @@ def create_window():
   save_button.pack()
   button_clear = tk.Button(window,
                            text="Clear List",
-                           command=lambda: clear_list(listbox))
+                           command=lambda: clear_list(listbox, history_manager))
   button_clear.pack()
   theme_menu = tk.Menu(menubar, tearoff=0)
   theme_menu.add_command(label="Light Theme", command=lambda: change_theme("light"))
