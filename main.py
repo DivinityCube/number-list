@@ -139,6 +139,66 @@ class FilterCommand(Command):
       for number in numbers:
           self.listbox.insert(tk.END, number)
 
+class HistoryManager:
+  def __init__(self):
+    self.history = []
+    self.current_index = -1
+
+  def add_state(self, state):
+    if self.current_index < len(self.history) - 1:
+      self.history = self.history[:self.current_index + 1]
+    
+    self.history.append(state)
+    self.current_index += 1
+  
+  def undo(self):
+    if self.current_index > 0:
+      self.current_index -= 1
+      return self.history[self.current_index]
+    return None
+  
+  def redo(self):
+    if self.current_index < len(self.history) -1:
+      self.current_index += 1
+      return self.history[self.current_index]
+    return None
+  
+  def get_current_state(self):
+    if self.history:
+      return self.history[self.current_index]
+    return None
+
+  def get_history(self):
+    return self.history
+  
+def view_history(history_manager):
+  history = history_manager.get_history()
+  if not history:
+      messagebox.showinfo("Info", "No history available.", parent=window)
+      return
+
+  history_window = tk.Toplevel(window)
+  history_window.title("History")
+
+  listbox_history = tk.Listbox(history_window, width=50, height=10)
+  listbox_history.pack()
+
+  for index, state in enumerate(history):
+      listbox_history.insert(tk.END, f"Version {index + 1}: {', '.join(state)}")
+
+  def restore_selected():
+    selected_index = listbox_history.curselection()
+    if selected_index:
+      state_to_restore = history[selected_index[0]]
+      restore_history(state_to_restore)
+
+  restore_button = tk.Button(history_window, text="Restore Selected", command=restore_selected)
+  restore_button.pack()
+
+def restore_history(state):
+  listbox.delete(0, tk.END)
+  for item in state:
+    listbox.insert(tk.END, item)
 
 def delete_selected_entry(listbox, undo_redo_manager):
   selected_index = listbox.curselection()
@@ -212,7 +272,7 @@ def save_list(window, listbox):
   except Exception as e:
     messagebox.showerror("Error", str(e), parent=window)
 
-def add_number(window, listbox, entry, undo_redo_manager):
+def add_number(window, listbox, entry, undo_redo_manager, history_manager):
   global counter
   item = entry.get()
   if not item:
@@ -224,6 +284,7 @@ def add_number(window, listbox, entry, undo_redo_manager):
     command = AddNumberCommand(listbox, item)
     undo_redo_manager.execute(command)
     counter += 1
+    history_manager.add_state(list(listbox.get(0, tk.END)))
   else:
     messagebox.showerror(
       "Error",
@@ -231,12 +292,13 @@ def add_number(window, listbox, entry, undo_redo_manager):
       parent=window)
   entry.delete(0, tk.END)
 
-def clear_list(listbox, show_message=True):
+def clear_list(listbox, history_manager, show_message=True):
   numbers = listbox.get(0, tk.END)
   if not numbers and show_message:
     messagebox.showerror("Error", "The list is already empty!")
   else:
     listbox.delete(0, tk.END)
+    history_manager.add_state(list(listbox.get(0, tk.END)))
 
 from odf import text, teletype
 from odf.opendocument import load
@@ -397,7 +459,7 @@ def save_to_odf(window, listbox):
     textdoc.text.addElement(p)
   textdoc.save(filename)
 
-def add_all_numbers(window, listbox):
+def add_all_numbers(window, listbox, history_manager):
   global counter
   numbers = listbox.get(0, tk.END)
   if len(numbers) < 2:
@@ -408,8 +470,9 @@ def add_all_numbers(window, listbox):
   total = sum(int(number.split(". ")[1]) for number in numbers)
   clear_list(listbox)
   listbox.insert(tk.END, f"{counter}. {total}")
+  history_manager.add_state(list(listbox.get(0, tk.END)))
 
-def subtract_numbers(window, listbox):
+def subtract_numbers(window, listbox, history_manager):
     global counter
     numbers = listbox.get(0, tk.END)
     if len(numbers) < 2:
@@ -421,9 +484,10 @@ def subtract_numbers(window, listbox):
       float(number.split(". ")[1]) for number in numbers[1:])
     clear_list(listbox)
     listbox.insert(tk.END, f"{counter}. {total}")
+    history_manager.add_state(list(listbox.get(0, tk.END)))
 
 
-def multiply_all_numbers(window, listbox):
+def multiply_all_numbers(window, listbox, history_manager):
   global counter
   numbers = listbox.get(0, tk.END)
   if len(numbers) < 2:
@@ -436,8 +500,9 @@ def multiply_all_numbers(window, listbox):
     total *= int(number.split(". ")[1])
   clear_list(listbox)
   listbox.insert(tk.END, f"{counter}. {total}")
+  history_manager.add_state(list(listbox.get(0, tk.END)))
 
-def divide_all_numbers(window, listbox):
+def divide_all_numbers(window, listbox, history_manager):
   global counter
   numbers = listbox.get(0, tk.END)
   if len(numbers) < 2:
@@ -453,8 +518,9 @@ def divide_all_numbers(window, listbox):
     total /= int(number.split(". ")[1])
   clear_list(listbox)
   listbox.insert(tk.END, f"{counter}. {total}")
+  history_manager.add_state(list(listbox.get(0, tk.END)))
 
-def square_all_numbers(window, listbox):
+def square_all_numbers(window, listbox, history_manager):
   global counter
   numbers = listbox.get(0, tk.END)
   if len(numbers) < 1:
@@ -466,10 +532,11 @@ def square_all_numbers(window, listbox):
   for number in numbers:
     square_number = float(number.split(". ")[1])**2
     listbox.insert(tk.END, f"{counter}. {square_number}")
+    history_manager.add_state(list(listbox.get(0, tk.END)))
 
 algebra_dict = {}
 
-def numeral_system_conversions(listbox):
+def numeral_system_conversions(listbox, history_manager):
   numbers = listbox.get(0, tk.END)
   if not numbers:
     messagebox.showerror("Error", "There are no entries in the number list!", parent=window)
@@ -483,12 +550,15 @@ def numeral_system_conversions(listbox):
     converted_item = f"Binary: {binary_number}"
     listbox.insert(tk.END, f"{counter}. {converted_item}")
     counter += 1
+    history_manager.add_state(list(listbox.get(0, tk.END)))
     converted_item = f"Octal: {octal_number}"
     listbox.insert(tk.END, f"{counter}. {converted_item}")
     counter += 1
+    history_manager.add_state(list(listbox.get(0, tk.END)))
     converted_item = f"Hexadecimal: {hexadecimal_number}"
     listbox.insert(tk.END, f"{counter}. {converted_item}")
     counter += 1
+    history_manager.add_state(list(listbox.get(0, tk.END)))
 
 def define_algebraic_letter(window):
   letter_window = tk.Toplevel(window)
@@ -545,7 +615,7 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'Sorts & Filters' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.66.711")
+  version_label = tk.Label(about_window, text="Version 0.67.244 BETA 1")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -682,13 +752,15 @@ def create_advanced_graph(window, listbox):
 
     update_graph()
 
-def sort_numbers_ascending(window, listbox, undo_redo_manager):
+def sort_numbers_ascending(window, listbox, undo_redo_manager, history_manager):
   command = SortCommand(listbox, undo_redo_manager, reverse=False)
   undo_redo_manager.execute(command)
+  history_manager.add_state(list(listbox.get(0, tk.END)))
 
-def sort_numbers_descending(window, listbox, undo_redo_manager):
+def sort_numbers_descending(window, listbox, undo_redo_manager, history_manager):
   command = SortCommand(listbox, undo_redo_manager, reverse=True)
   undo_redo_manager.execute(command)
+  history_manager.add_state(list(listbox.get(0, tk.END)))
 
 def update_listbox_with_numbers(listbox, numbers):
   listbox.delete(0, tk.END)
@@ -785,7 +857,7 @@ def create_new_window():
   entry = tk.Entry(window)
   entry.pack()
   button_add = tk.Button(window, text="Add number", 
-                         command=lambda: add_number(window, listbox, entry, undo_redo_manager))
+                         command=lambda: add_number(window, listbox, entry, undo_redo_manager, history_manager))
   button_add.pack()
   save_button = tk.Button(window,
   text="Save List",
@@ -802,6 +874,8 @@ def create_new_window():
   
 
 def create_window():
+  global history_manager
+  history_manager = HistoryManager()
   window.title("Number List")
   global listbox
   undo_redo_manager = UndoRedoManager()
@@ -874,7 +948,7 @@ def create_window():
   entry = tk.Entry(window)
   entry.pack()
   button_add = tk.Button(window, text="Add number", 
-                         command=lambda: add_number(window, listbox, entry, undo_redo_manager))
+                         command=lambda: add_number(window, listbox, entry, undo_redo_manager, history_manager))
   button_add.pack()
   save_button = tk.Button(window,
   text="Save List",
@@ -888,8 +962,7 @@ def create_window():
   theme_menu.add_command(label="Light Theme", command=lambda: change_theme("light"))
   theme_menu.add_command(label="Dark Theme", command=lambda: change_theme("dark"))
   menubar.add_cascade(label="Themes", menu=theme_menu)
-create_window()
-
+create_window() 
 
 def main():
   window.mainloop()
