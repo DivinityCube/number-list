@@ -489,7 +489,7 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'Sorts & Filters' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.66.711 BETA 2")
+  version_label = tk.Label(about_window, text="Version 0.66.711 BETA 3")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -654,7 +654,7 @@ def filter_odd_numbers(window, listbox):
 def filter_custom_range(window, listbox):
   min_value = float(simpledialog.askstring("Input", "Enter minimum value:", parent=window))
   max_value = float(simpledialog.askstring("Input", "Enter maximum value", parent=window))
-  numbers = [float(item.split(". ")[1]) for item in listbot.get(0, tk.END)]
+  numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
   filtered_numbers = [num for num in numbers if min_value <= num <= max_value]
   update_listbox_with_numbers(listbox, filtered_numbers)
 
@@ -803,6 +803,11 @@ def create_window():
   math_menu.add_cascade(label="Sort", menu=sort_menu)
   sort_menu.add_command(label="Ascending", command=lambda: sort_numbers_ascending(window, listbox))
   sort_menu.add_command(label="Descending", command=lambda: sort_numbers_descending(window, listbox))
+  filter_menu = tk.Menu(math_menu, tearoff=0)
+  math_menu.add_cascade(label="Filter", menu=filter_menu)
+  filter_menu.add_command(label="Even Numbers", command=lambda: filter_even_numbers(window, listbox))
+  filter_menu.add_command(label="Odd Numbers", command=lambda: filter_odd_numbers(window, listbox))
+  filter_menu.add_command(label="Custom Range", command=lambda: filter_custom_range(window, listbox))
   graph_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Graph", menu=graph_menu)
   graph_menu.add_command(label="Create Graph", command=lambda: create_graph(window, listbox))
