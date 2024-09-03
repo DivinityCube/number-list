@@ -651,6 +651,13 @@ def filter_odd_numbers(window, listbox):
   odd_numbers = [num for num in numbers if num % 2 != 0]
   update_listbox_with_numbers(listbox, odd_numbers)
 
+def filter_custom_range(window, listbox):
+  min_value = float(simpledialog.askstring("Input", "Enter minimum value:", parent=window))
+  max_value = float(simpledialog.askstring("Input", "Enter maximum value", parent=window))
+  numbers = [float(item.split(". ")[1]) for item in listbot.get(0, tk.END)]
+  filtered_numbers = [num for num in numbers if min_value <= num <= max_value]
+  update_listbox_with_numbers(listbox, filtered_numbers)
+
 def create_new_window():
   global counter
   window = tk.Tk()
