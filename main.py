@@ -92,6 +92,9 @@ class SortCommand(Command):
   
   def execute(self):
     self.previous_state = list(self.listbox.get(0, tk.END))
+    if not self.previous_state:
+      messagebox.showerror("Error", "The list is empty! Cannot sort an empty list.", parent=window)
+      return
     numbers = [float(item.split(". ")[1]) for item in self.previous_state]
     numbers.sort(reverse=self.reverse)
     self.sorted_numbers = [f"{i + 1}. {number}" for i, number in enumerate(numbers)]
@@ -116,8 +119,14 @@ class FilterCommand(Command):
 
   def execute(self):
       self.previous_state = list(self.listbox.get(0, tk.END))
+      if not self.previous_state:
+        messagebox.showerror("Error", "The list is empty! Cannot filter an empty list.", parent=window)
+        return
       numbers = [float(item.split(". ")[1]) for item in self.previous_state]
       filtered = self.filter_function(numbers)
+      if not filtered:
+        messagebox.showinfo("Info", "No numbers match the filtering criteria.", parent=window)
+        return
       self.filtered_numbers = [f"{i + 1}. {number}" for i, number in enumerate(filtered)]
       self.update_listbox(self.filtered_numbers)
 
@@ -235,8 +244,8 @@ from odf.opendocument import load
 def open_file(window, listbox):
   global counter
   filename = filedialog.askopenfilename(filetypes=[
-    ('Excel Files', '*.xls ; *.xlsx'), ('CSV Files', '*.csv'),
-    ('ODF Text Files', '*.odt'), ('ODF Spreadsheet Files', '*.ods'),
+    ('Excel Files (.xls, .xlsx)', '*.xls ; *.xlsx'), ('CSV Files (.csv)', '*.csv'),
+    ('ODF Text Files (.odt)', '*.odt'), ('ODF Spreadsheet Files (.ods)', '*.ods'),
     ('All Files', '*.*')
   ], parent=window)
   if not filename:
@@ -536,7 +545,7 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'Sorts & Filters' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.66.711 FINAL BETA")
+  version_label = tk.Label(about_window, text="Version 0.66.711")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -695,6 +704,9 @@ def filter_odd_numbers(window, listbox, undo_redo_manager):
   undo_redo_manager.execute(command)
 
 def filter_custom_range(window, listbox, undo_redo_manager):
+  if not listbox.size():
+    messagebox.showerror("Error", "The list is empty! Cannot filter an empty list.", parent=window)
+    return
   min_value = float(simpledialog.askstring("Input", "Enter minimum value:", parent=window))
   max_value = float(simpledialog.askstring("Input", "Enter maximum value:", parent=window))
   command = FilterCommand(listbox, undo_redo_manager, lambda numbers: [num for num in numbers if min_value <= num <= max_value])
