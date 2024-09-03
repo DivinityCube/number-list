@@ -82,6 +82,53 @@ class UndoRedoManager:
     self.undo_stack.append(command)
     return True
 
+class SortCommand(Command):
+  def __init__(self, listbox, undo_redo_manager, reverse=False):
+    self.listbox = listbox
+    self.undo_redo_manager = undo_redo_manager
+    self.reverse = reverse
+    self.previous_state = None
+    self.sorted_numbers = None
+  
+  def execute(self):
+    self.previous_state = list(self.listbox.get(0, tk.END))
+    numbers = [float(item.split(". ")[1]) for item in self.previous_state]
+    numbers.sort(reverse=self.reverse)
+    self.sorted_numbers = [f"{i + 1}. {number}" for i, number in enumerate(numbers)]
+    self.update_listbox(self.sorted_numbers)
+
+  def undo(self):
+    if self.previous_state:
+      self.update_listbox(self.previous_state)
+
+  def update_listbox(self, numbers):
+    self.listbox.delete(0, tk.END)
+    for number in numbers:
+      self.listbox.insert(tk.END, number)
+
+class FilterCommand(Command):
+  def __init__(self, listbox, undo_redo_manager, filter_function):
+        self.listbox = listbox
+        self.undo_redo_manager = undo_redo_manager
+        self.filter_function = filter_function
+        self.previous_state = None
+        self.filtered_numbers = None
+
+  def execute(self):
+      self.previous_state = list(self.listbox.get(0, tk.END))
+      numbers = [float(item.split(". ")[1]) for item in self.previous_state]
+      filtered = self.filter_function(numbers)
+      self.filtered_numbers = [f"{i + 1}. {number}" for i, number in enumerate(filtered)]
+      self.update_listbox(self.filtered_numbers)
+
+  def undo(self):
+      if self.previous_state:
+          self.update_listbox(self.previous_state)
+
+  def update_listbox(self, numbers):
+      self.listbox.delete(0, tk.END)
+      for number in numbers:
+          self.listbox.insert(tk.END, number)
 
 
 def delete_selected_entry(listbox, undo_redo_manager):
@@ -626,38 +673,32 @@ def create_advanced_graph(window, listbox):
 
     update_graph()
 
-def sort_numbers_ascending(window, listbox):
-  numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
-  numbers.sort()
-  update_listbox_with_numbers(listbox, numbers)
+def sort_numbers_ascending(window, listbox, undo_redo_manager):
+  command = SortCommand(listbox, undo_redo_manager, reverse=False)
+  undo_redo_manager.execute(command)
 
-def sort_numbers_descending(window, listbox):
-  numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
-  numbers.sort()
-  update_listbox_with_numbers(listbox, numbers)
+def sort_numbers_descending(window, listbox, undo_redo_manager):
+  command = SortCommand(listbox, undo_redo_manager, reverse=True)
+  undo_redo_manager.execute(command)
 
 def update_listbox_with_numbers(listbox, numbers):
   listbox.delete(0, tk.END)
   for i, number in enumerate(numbers, 1):
     listbox.insert(tk.END, f"{i}, {number}")
 
-def filter_even_numbers(window, listbox):
-  numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
-  even_numbers = [num for num in numbers if num % 2 == 0]
-  update_listbox_with_numbers(listbox, even_numbers)
+def filter_even_numbers(window, listbox, undo_redo_manager):
+  command = FilterCommand(listbox, undo_redo_manager, lambda numbers: [num for num in numbers if num % 2 == 0])
+  undo_redo_manager.execute(command)
 
-def filter_odd_numbers(window, listbox):
-  numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
-  odd_numbers = [num for num in numbers if num % 2 != 0]
-  update_listbox_with_numbers(listbox, odd_numbers)
+def filter_odd_numbers(window, listbox, undo_redo_manager):
+  command = FilterCommand(listbox, undo_redo_manager, lambda numbers: [num for num in numbers if num % 2 != 0])
+  undo_redo_manager.execute(command)
 
-def filter_custom_range(window, listbox):
+def filter_custom_range(window, listbox, undo_redo_manager):
   min_value = float(simpledialog.askstring("Input", "Enter minimum value:", parent=window))
-  max_value = float(simpledialog.askstring("Input", "Enter maximum value", parent=window))
-  numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
-  filtered_numbers = [num for num in numbers if min_value <= num <= max_value]
-  update_listbox_with_numbers(listbox, filtered_numbers)
-
+  max_value = float(simpledialog.askstring("Input", "Enter maximum value:", parent=window))
+  command = FilterCommand(listbox, undo_redo_manager, lambda numbers: [num for num in numbers if min_value <= num <= max_value])
+  undo_redo_manager.execute(command)
 def create_new_window():
   global counter
   window = tk.Tk()
@@ -717,8 +758,12 @@ def create_new_window():
   math_menu.add_command(label="Numeral System Conversions", command=lambda: numeral_system_conversions(listbox))
   sort_menu = tk.Menu(math_menu, tearoff=0)
   math_menu.add_cascade(label="Sort", menu=sort_menu)
-  sort_menu.add_command(label="Ascending", command=lambda: sort_numbers_ascending(window, listbox))
-  sort_menu.add_command(label="Descending", command=lambda: sort_numbers_descending(window, listbox))
+  sort_menu.add_command(label="Ascending", command=lambda: sort_numbers_ascending(window, listbox, undo_redo_manager))
+  sort_menu.add_command(label="Descending", command=lambda: sort_numbers_descending(window, listbox, undo_redo_manager))
+  filter_menu = tk.Menu(math_menu, tearoff=0)
+  filter_menu.add_command(label="Even Numbers", command=lambda: filter_even_numbers(window, listbox, undo_redo_manager))
+  filter_menu.add_command(label="Odd Numbers", command=lambda: filter_odd_numbers(window, listbox, undo_redo_manager))
+  filter_menu.add_command(label="Custom Range", command=lambda: filter_custom_range(window, listbox, undo_redo_manager))
   graph_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Graph", menu=graph_menu)
   graph_menu.add_command(label="Create Graph", command=lambda: create_graph(window, listbox))
@@ -801,13 +846,13 @@ def create_window():
     label="Convert Algebra", command=lambda: convert_algebra(window, listbox))
   sort_menu = tk.Menu(math_menu, tearoff=0)
   math_menu.add_cascade(label="Sort", menu=sort_menu)
-  sort_menu.add_command(label="Ascending", command=lambda: sort_numbers_ascending(window, listbox))
-  sort_menu.add_command(label="Descending", command=lambda: sort_numbers_descending(window, listbox))
+  sort_menu.add_command(label="Ascending", command=lambda: sort_numbers_ascending(window, listbox, undo_redo_manager))
+  sort_menu.add_command(label="Descending", command=lambda: sort_numbers_descending(window, listbox, undo_redo_manager))
   filter_menu = tk.Menu(math_menu, tearoff=0)
   math_menu.add_cascade(label="Filter", menu=filter_menu)
-  filter_menu.add_command(label="Even Numbers", command=lambda: filter_even_numbers(window, listbox))
-  filter_menu.add_command(label="Odd Numbers", command=lambda: filter_odd_numbers(window, listbox))
-  filter_menu.add_command(label="Custom Range", command=lambda: filter_custom_range(window, listbox))
+  filter_menu.add_command(label="Even Numbers", command=lambda: filter_even_numbers(window, listbox, undo_redo_manager))
+  filter_menu.add_command(label="Odd Numbers", command=lambda: filter_odd_numbers(window, listbox, undo_redo_manager))
+  filter_menu.add_command(label="Custom Range", command=lambda: filter_custom_range(window, listbox, undo_redo_manager))
   graph_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Graph", menu=graph_menu)
   graph_menu.add_command(label="Create Graph", command=lambda: create_graph(window, listbox))
