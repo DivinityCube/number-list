@@ -144,32 +144,38 @@ class HistoryManager:
     self.history = []
     self.current_index = -1
 
-  def add_state(self, state):
+  def add_state(self, state, name=None):
     if self.current_index < len(self.history) - 1:
       self.history = self.history[:self.current_index + 1]
     
-    self.history.append(state)
+    version_name = name if name else f"Version {len(self.history) + 1}"
+    self.history.append((version_name, state))
     self.current_index += 1
   
   def undo(self):
     if self.current_index > 0:
       self.current_index -= 1
-      return self.history[self.current_index]
+      return self.history[self.current_index][1]
     return None
   
   def redo(self):
-    if self.current_index < len(self.history) -1:
+    if self.current_index < len(self.history) - 1:
       self.current_index += 1
-      return self.history[self.current_index]
+      return self.history[self.current_index][1]
     return None
   
   def get_current_state(self):
     if self.history:
-      return self.history[self.current_index]
+      return self.history[self.current_index][1]
     return None
 
   def get_history(self):
     return self.history
+  
+  def get_current_version_name(self):
+    if self.history:
+      return self.history[self.current_index][0]
+    return None
   
 def view_history(history_manager):
   history = history_manager.get_history()
@@ -183,17 +189,26 @@ def view_history(history_manager):
   listbox_history = tk.Listbox(history_window, width=50, height=10)
   listbox_history.pack()
 
-  for index, state in enumerate(history):
-      listbox_history.insert(tk.END, f"Version {index + 1}: {', '.join(state)}")
+  for index, (name, state) in enumerate(history):
+      listbox_history.insert(tk.END, f"Version {index + 1}: {name}")
 
   def restore_selected():
     selected_index = listbox_history.curselection()
     if selected_index:
-      state_to_restore = history[selected_index[0]]
+      _, state_to_restore = history[selected_index[0]]
       restore_history(state_to_restore)
 
   restore_button = tk.Button(history_window, text="Restore Selected", command=restore_selected)
   restore_button.pack()
+
+def display_current_version_name(window, history_manager):
+  version_name = history_manager.get_current_version_name()
+  version_label = tk.Label(window, text=f"Current Version: {version_name}")
+  version_label.pack()
+
+def save_named_version(window, listbox, history_manager):
+  version_name = simpledialog.askstring("Version Name", "Enter a name for this version:", parent=window)
+  history_manager.add_state(list(listbox.get(0, tk.END)), name=version_name)
 
 def restore_history(state):
   listbox.delete(0, tk.END)
@@ -470,7 +485,8 @@ def add_all_numbers(window, listbox, history_manager):
   total = sum(int(number.split(". ")[1]) for number in numbers)
   clear_list(listbox, history_manager)
   listbox.insert(tk.END, f"{counter}. {total}")
-  history_manager.add_state(list(listbox.get(0, tk.END)))
+  version_name = simpledialog.askstring("Version Name", "Please enter a name for this version:", parent=window)
+  history_manager.add_state(list(listbox.get(0, tk.END)), name=version_name)
 
 def subtract_numbers(window, listbox, history_manager):
     global counter
@@ -615,7 +631,7 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'History' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.67.244 BETA 3")
+  version_label = tk.Label(about_window, text="Version 0.67.244 FINAL BETA")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -950,9 +966,10 @@ def create_window():
   graph_menu.add_command(label="Create Advanced Graph", command=lambda: create_advanced_graph(window, listbox))
   history_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="History", menu=history_menu)
-  history_menu.add_cascade(label="View History", command=lambda: view_history(history_manager))
-  history_menu.add_cascade(label="Undo to Previous State", command=lambda: restore_history(history_manager.undo()))
-  history_menu.add_cascade(label="Redo to Next State", command=lambda: restore_history(history_manager.redo()))
+  history_menu.add_command(label="View History", command=lambda: view_history(history_manager))
+  history_menu.add_command(label="Undo to Previous State", command=lambda: restore_history(history_manager.undo()))
+  history_menu.add_command(label="Redo to Next State", command=lambda: restore_history(history_manager.redo()))
+  history_menu.add_command(label="Save Named Version", command=lambda: save_named_version(window, listbox, history_manager))
   listbox = tk.Listbox(window)
   listbox.pack()
   entry = tk.Entry(window)
