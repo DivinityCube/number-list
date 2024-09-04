@@ -249,51 +249,6 @@ def update_listbox_numbers(listbox):
     listbox.delete(i)
     listbox.insert(i, f"{i + 1}. {number}")
 
-
-def show_current_file_extension(window):
-  messagebox.showinfo(
-    "Current File Extension",
-    f"The current file extension is: {window.file_extension}")
-
-def ask_file_type(window):
-    file_type = simpledialog.askstring(
-        "Input",
-        "Enter the file type (.csv, .xls, .odt, .ods, .xlsx)",
-        parent=window)
-
-    if file_type:
-        window.file_extension = "." + file_type.split(".")[-1]
-    else:
-        messagebox.showwarning("Filetype Warning", "No file type detected. Continuing onto Number List. Before saving, remember to change the file extension beforehand!", parent=window)
-
-    return file_type
-
-file_extension = ask_file_type(window)
-
-def save_list(window, listbox):
-  numbers = listbox.get(0, tk.END)
-  if not numbers:
-    messagebox.showerror("Error", "You can't save an empty list!", parent=window)
-    return
-
-  try:
-    file_type = window.file_extension
-    if file_type == '.csv':
-      save_to_csv(window, listbox)
-    elif file_type == '.xls':
-      save_to_xls(window, listbox)
-    elif file_type == '.odt':
-      save_to_odf(window, listbox)
-    elif file_type == '.ods':
-      save_to_ods(window, listbox)
-    elif file_type == '.xlsx':
-      save_to_xlsx(window, listbox)
-    else:
-      messagebox.showerror("Error", "Invalid file type!", parent=window)
-
-  except Exception as e:
-    messagebox.showerror("Error", str(e), parent=window)
-
 def add_number(window, listbox, entry, undo_redo_manager, history_manager):
   global counter
   item = entry.get()
@@ -370,116 +325,6 @@ def open_file(window, listbox):
         if cell is not None:
           listbox.insert(tk.END, f"{counter}. {str(cell)}")
           counter += 1
-
-def save_to_csv(window, listbox):
-  numbers = listbox.get(0, tk.END)
-  if not numbers:
-    messagebox.showerror("Error",
-                         "You can't save an empty list!",
-                         parent=window)
-    return
-  now = datetime.now()
-  timestamp = now.strftime("%Y%m%d%H%M%S")
-  filename = f'numbers_{timestamp}.csv'
-  with open(filename, 'w', newline='') as f:
-    writer = csv.writer(f)
-    for number in numbers:
-      writer.writerow([number.split(". ")[1]])
-
-def save_to_ods(window, listbox):
-  numbers = listbox.get(0, tk.END)
-  if not numbers:
-    messagebox.showerror("Error",
-                         "You can't save an empty list!",
-                         parent=window)
-    return
-  now = datetime.now()
-  timestamp = now.strftime("%Y%m%d%H%M%S")
-  filename = f'numbers_{timestamp}.ods'
-  spreadsheet = ezodf.newdoc(doctype='ods', filename=filename)
-  sheet = Sheet('Sheet1', size=(len(numbers), 1))
-  for i, number in enumerate(numbers):
-    sheet[i, 0].set_value(number.split(". ")[1])
-  spreadsheet.sheets += sheet
-  spreadsheet.save()
-
-def save_to_xls(window, listbox):
-  global counter
-  numbers = listbox.get(0, tk.END)
-  if not numbers:
-    messagebox.showerror("Error",
-                         "You can't save an empty list!",
-                         parent=window)
-    return
-
-  now = datetime.now()
-  timestamp = now.strftime("%Y%m%d%H%M%S")
-  filename = f'numbers_{timestamp}.xls'
-  book = xlwt.Workbook()
-  sheet1 = book.add_sheet('Sheet 1')
-  for i, number in enumerate(numbers):
-    sheet1.write(i, 0, number.split(". ")[1])
-  book.save(filename)
-  if not filename:
-    return
-  if filename.endswith('.csv'):
-    with open(filename, 'r') as f:
-      reader = csv.reader(f)
-      clear_list(listbox)
-      for row in reader:
-        for number in row:
-          listbox.insert(tk.END, f"{counter}. {number}")
-          counter += 1
-  elif filename.endswith('.xls'):
-    df = pd.read_excel(filename)
-    clear_list(listbox)
-    for index, row in df.iterrows():
-      for number in row:
-        listbox.insert(tk.END, f"{counter}. {number}")
-        counter += 1
-  else:
-    messagebox.showerror("Error", "Unsupported file format.", parent=window)
-
-def save_to_xlsx(window, listbox):
-  numbers = listbox.get(0, tk.END)
-  if not numbers:
-    messagebox.showerror("Error",
-                         "You can't save an empty list!",
-                         parent=window)
-    return
-  now = datetime.now()
-  filename = f'numbers_{now.strftime("%Y%m%d%H%M%S")}.xlsx'
-  filetypes = [('Excel Files', ['*.xlsx ; *.xls'])]
-  filename = filedialog.asksaveasfilename(defaultextension=".xlsx",
-                                          filetypes=filetypes,
-                                          parent=window)
-  if not filename:
-    return
-  workbook = openpyxl.Workbook()
-  sheet = workbook.active
-  for i, number in enumerate(numbers):
-    sheet.cell(row=i + 1, column=1, value=number.split(". ")[1])
-  workbook.save(filename).xlsx
-
-def file_menu_change(file_menu):
-  file_menu.add_command(label="Save as XLSX",
-                        command=lambda: save_to_xlsx(window, listbox))
-
-def save_to_odf(window, listbox):
-  numbers = listbox.get(0, tk.END)
-  if not numbers:
-    messagebox.showerror("Error",
-                         "You can't save an empty list!",
-                         parent=window)
-    return
-  now = datetime.now()
-  timestamp = now.strftime("%Y%m%d%H%M%S")
-  filename = f'numbers_{timestamp}.odt'
-  textdoc = OpenDocumentText()
-  for number in numbers:
-    p = P(text=str(number.split(". ")[1]))
-    textdoc.text.addElement(p)
-  textdoc.save(filename)
 
 def add_all_numbers(window, listbox, history_manager, version_label):
   global counter
@@ -836,6 +681,22 @@ def filter_custom_range(window, listbox, undo_redo_manager):
   command = FilterCommand(listbox, undo_redo_manager, lambda numbers: [num for num in numbers if min_value <= num <= max_value])
   undo_redo_manager.execute(command)
 
+def export_to_csv(window, listbox):
+  numbers = listbox.get(0, tk.END)
+  if not numbers:
+    messagebox.showerror("Error", "The list is empty! Cannot export an empty list.", parent=window)
+    return
+    
+  file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")], parent=window)
+  if not file_path:
+    return
+    
+  with open(file_path, 'w', newline='') as file:
+    writer = csv.writer(file)
+    for number in numbers:
+      writer.writerow([number.split(". ")[1]])
+  messagebox.showinfo("Export", f"List exported successfully to {file_path}", parent=window)
+
 def export_to_json(window, listbox):
   numbers = listbox.get(0, tk.END)
   if not numbers:
@@ -863,17 +724,10 @@ def create_new_window():
                             text="Delete Selected Entry",
                             command=lambda: delete_selected_entry(listbox, undo, undo_redo_manager))
   delete_button.pack()
-  button_extension = tk.Button(window,
-                               text="Change File Extension",
-                               command=lambda: ask_file_type(window))
-  button_extension.pack()
-
   menubar = tk.Menu(window)
   window.config(menu=menubar)
   file_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="File", menu=file_menu)
-  file_menu.add_command(label="Save",
-                        command=lambda: save_list(window, listbox))
   file_menu.add_command(label="New", command=lambda: create_new_window())
   file_menu.add_command(label="Open",
                         command=lambda: open_file(window, listbox))
@@ -885,8 +739,6 @@ def create_new_window():
   help_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Help", menu=help_menu)
   help_menu.add_command(label="About", command=lambda: about(window))
-  help_menu.add_command(label="Current File Extension",
-                        command=lambda: show_current_file_extension(window))
   math_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Calculate", menu=math_menu)
   math_menu.add_command(label="Add",
@@ -930,10 +782,6 @@ def create_new_window():
   button_add = tk.Button(window, text="Add number", 
                          command=lambda: add_number(window, listbox, entry, undo_redo_manager, history_manager))
   button_add.pack()
-  save_button = tk.Button(window,
-  text="Save List",
-  command=lambda: save_list(listbox))
-  save_button.pack()
   button_clear = tk.Button(window,
                            text="Clear List",
                            command=lambda: clear_list(listbox))
@@ -960,10 +808,6 @@ def create_window():
                             text="Delete Selected Entry",
                             command=lambda: delete_selected_entry(listbox, undo_redo_manager))
   delete_button.pack()  
-  button_extension = tk.Button(window,
-                               text="Change File Extension",
-                               command=lambda: ask_file_type(window))
-  button_extension.pack()
   menubar = tk.Menu(window)
   window.config(menu=menubar)
   file_menu = tk.Menu(menubar, tearoff=0)
@@ -980,8 +824,6 @@ def create_window():
   help_menu.add_command(label="Report a Bug", command=lambda: report_bug(window))
   menubar.add_cascade(label="Help", menu=help_menu)
   help_menu.add_command(label="About", command=lambda: about(window))
-  help_menu.add_command(label="Current File Extension",
-                        command=lambda: show_current_file_extension(window))
   math_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Calculate", menu=math_menu)
   data_menu = tk.Menu(math_menu, tearoff=0)
@@ -1029,10 +871,6 @@ def create_window():
   button_add = tk.Button(window, text="Add number", 
                          command=lambda: add_number(window, listbox, entry, undo_redo_manager, history_manager))
   button_add.pack()
-  save_button = tk.Button(window,
-  text="Save List",
-  command=lambda: save_list(window, listbox))
-  save_button.pack()
   button_clear = tk.Button(window,
                            text="Clear List",
                            command=lambda: clear_list(listbox, history_manager))
