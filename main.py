@@ -1,5 +1,6 @@
 import tkinter as tk
 import csv
+import json
 from datetime import datetime
 from tkinter import messagebox, filedialog
 from tkinter import simpledialog
@@ -834,6 +835,20 @@ def filter_custom_range(window, listbox, undo_redo_manager):
   max_value = float(simpledialog.askstring("Input", "Enter maximum value:", parent=window))
   command = FilterCommand(listbox, undo_redo_manager, lambda numbers: [num for num in numbers if min_value <= num <= max_value])
   undo_redo_manager.execute(command)
+
+def export_to_json(window, listbox):
+  numbers = listbox.get(0, tk.END)
+  if not numbers:
+    messagebox.showerror("Error", "The list is empty! Cannot export an empty list.", parent=window)
+    return
+  file_path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json")], parent=window)
+  if not file_path:
+    return
+  data = [number.split(". ")[1] for number in numbers]    
+  with open(file_path, 'w') as file:
+    json.dump(data, file, indent=4)
+  messagebox.showinfo("Export", f"List exported successfully to {file_path}", parent=window)
+
 def create_new_window():
   global counter
   window = tk.Tk()
