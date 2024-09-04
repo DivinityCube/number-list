@@ -189,8 +189,8 @@ def view_history(history_manager):
   listbox_history = tk.Listbox(history_window, width=50, height=10)
   listbox_history.pack()
 
-  for index, (name, state) in enumerate(history):
-      listbox_history.insert(tk.END, f"Version {index + 1}: {name}")
+  for name, _ in history:
+    listbox_history.insert(tk.END, name)
 
   def restore_selected():
     selected_index = listbox_history.curselection()
@@ -201,13 +201,19 @@ def view_history(history_manager):
   restore_button = tk.Button(history_window, text="Restore Selected", command=restore_selected)
   restore_button.pack()
 
-def display_current_version_name(window, history_manager):
+def display_current_version_name(window, history_manager, version_label):
   version_name = history_manager.get_current_version_name()
-  version_label = tk.Label(window, text=f"Current Version: {version_name}")
-  version_label.pack()
+  if version_name:
+    version_label.config(text=f"Current Version: {version_name}")
+  else:
+    version_label.config(text="No version available")
+
 
 def save_named_version(window, listbox, history_manager):
   version_name = simpledialog.askstring("Version Name", "Enter a name for this version:", parent=window)
+  if not version_name:
+    messagebox.showerror("Error", "Version name cannot be empty.", parent=window)
+    return
   history_manager.add_state(list(listbox.get(0, tk.END)), name=version_name)
 
 def restore_history(state):
@@ -474,7 +480,7 @@ def save_to_odf(window, listbox):
     textdoc.text.addElement(p)
   textdoc.save(filename)
 
-def add_all_numbers(window, listbox, history_manager):
+def add_all_numbers(window, listbox, history_manager, version_label):
   global counter
   numbers = listbox.get(0, tk.END)
   if len(numbers) < 2:
@@ -486,9 +492,14 @@ def add_all_numbers(window, listbox, history_manager):
   clear_list(listbox, history_manager)
   listbox.insert(tk.END, f"{counter}. {total}")
   version_name = simpledialog.askstring("Version Name", "Please enter a name for this version:", parent=window)
+  if not version_name:
+    messagebox.showerror("Error", "Version name cannot be empty.", parent=window)
+    return
   history_manager.add_state(list(listbox.get(0, tk.END)), name=version_name)
 
-def subtract_numbers(window, listbox, history_manager):
+  display_current_version_name(window, history_manager, version_label)
+
+def subtract_numbers(window, listbox, history_manager, version_label):
     global counter
     numbers = listbox.get(0, tk.END)
     if len(numbers) < 2:
@@ -500,10 +511,16 @@ def subtract_numbers(window, listbox, history_manager):
       float(number.split(". ")[1]) for number in numbers[1:])
     clear_list(listbox, history_manager)
     listbox.insert(tk.END, f"{counter}. {total}")
-    history_manager.add_state(list(listbox.get(0, tk.END)))
+    version_name = simpledialog.askstring("Version Name", "Please enter a name for this version:", parent=window)
+    if not version_name:
+      messagebox.showerror("Error", "Version name cannot be empty.", parent=window)
+      return
+    history_manager.add_state(list(listbox.get(0, tk.END)), name=version_name)
+
+    display_current_version_name(window, history_manager, version_label)
 
 
-def multiply_all_numbers(window, listbox, history_manager):
+def multiply_all_numbers(window, listbox, history_manager, version_label):
   global counter
   numbers = listbox.get(0, tk.END)
   if len(numbers) < 2:
@@ -516,9 +533,15 @@ def multiply_all_numbers(window, listbox, history_manager):
     total *= int(number.split(". ")[1])
   clear_list(listbox, history_manager)
   listbox.insert(tk.END, f"{counter}. {total}")
-  history_manager.add_state(list(listbox.get(0, tk.END)))
+  version_name = simpledialog.askstring("Version Name", "Please enter a name for this version:", parent=window)
+  if not version_name:
+    messagebox.showerror("Error", "Version name cannot be empty.", parent=window)
+    return
+  history_manager.add_state(list(listbox.get(0, tk.END)), name=version_name)
 
-def divide_all_numbers(window, listbox, history_manager):
+  display_current_version_name(window, history_manager, version_label)
+
+def divide_all_numbers(window, listbox, history_manager, version_label):
   global counter
   numbers = listbox.get(0, tk.END)
   if len(numbers) < 2:
@@ -534,9 +557,15 @@ def divide_all_numbers(window, listbox, history_manager):
     total /= int(number.split(". ")[1])
   clear_list(listbox, history_manager)
   listbox.insert(tk.END, f"{counter}. {total}")
-  history_manager.add_state(list(listbox.get(0, tk.END)))
+  version_name = simpledialog.askstring("Version Name", "Please enter a name for this version:", parent=window)
+  if not version_name:
+    messagebox.showerror("Error", "Version name cannot be empty.", parent=window)
+    return
+  history_manager.add_state(list(listbox.get(0, tk.END)), name=version_name)
 
-def square_all_numbers(window, listbox, history_manager):
+  display_current_version_name(window, history_manager, version_label)
+
+def square_all_numbers(window, listbox, history_manager, version_label):
   global counter
   numbers = listbox.get(0, tk.END)
   if len(numbers) < 1:
@@ -548,7 +577,13 @@ def square_all_numbers(window, listbox, history_manager):
   for number in numbers:
     square_number = float(number.split(". ")[1])**2
     listbox.insert(tk.END, f"{counter}. {square_number}")
-    history_manager.add_state(list(listbox.get(0, tk.END)))
+    version_name = simpledialog.askstring("Version Name", "Please enter a name for this version:", parent=window)
+    if not version_name:
+      messagebox.showerror("Error", "Version name cannot be empty.", parent=window)
+      return
+    history_manager.add_state(list(listbox.get(0, tk.END)), name=version_name)
+
+    display_current_version_name(window, history_manager, version_label)
 
 algebra_dict = {}
 
@@ -898,6 +933,8 @@ def create_window():
   global history_manager
   history_manager = HistoryManager()
   window.title("Number List")
+  version_label = tk.Label(window, text="No version available")
+  version_label.pack()
   global listbox
   undo_redo_manager = UndoRedoManager()
   undo_button = tk.Button(window, text="Undo", command=lambda: undo(undo_redo_manager, listbox))
@@ -936,15 +973,15 @@ def create_window():
   math_menu.add_cascade(label="Data", menu=data_menu)
   data_menu.add_command(label="Numeral System Conversions", command=lambda: numeral_system_conversions(listbox, history_manager))
   math_menu.add_command(label="Add",
-                        command=lambda: add_all_numbers(window, listbox, history_manager))
+                        command=lambda: add_all_numbers(window, listbox, history_manager, version_label))
   math_menu.add_command(label="Subtract",
-                        command=lambda: subtract_numbers(window, listbox, history_manager))
+                        command=lambda: subtract_numbers(window, listbox, history_manager, version_label))
   math_menu.add_command(label="Multiply",
-                        command=lambda: multiply_all_numbers(window, listbox, history_manager))
+                        command=lambda: multiply_all_numbers(window, listbox, history_manager, version_label))
   math_menu.add_command(label="Divide",
-                        command=lambda: divide_all_numbers(window, listbox, history_manager))
+                        command=lambda: divide_all_numbers(window, listbox, history_manager, version_label))
   math_menu.add_command(label="Square",
-                        command=lambda: square_all_numbers(window, listbox, history_manager))
+                        command=lambda: square_all_numbers(window, listbox, history_manager, version_label))
   math_menu.add_command(label="Define Algebraic Letter",
                         command=lambda: define_algebraic_letter(window))
   more_algebra_menu = tk.Menu(math_menu, tearoff=0)
