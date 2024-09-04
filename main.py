@@ -289,7 +289,7 @@ def open_file(window, listbox):
   ], parent=window)
   if not filename:
     return
-  clear_list(listbox, show_message=False)
+  clear_list(listbox, history_manager, show_message=False)
   window.file_extension = "." + filename.split(".")[-1]
   if filename.endswith('.xls'):
     book = xlrd.open_workbook(filename)
@@ -512,7 +512,7 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'Share It Far And Wide' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.68.194 FINAL BETA")
+  version_label = tk.Label(about_window, text="Version 0.68.194")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -739,6 +739,22 @@ def copy_to_clipboard(window, listbox):
   window.clipboard_append(data)
   messagebox.showinfo("Copy", "List copied to clipboard!", parent=window)
 
+def share_via_email(window, listbox):
+  numbers = listbox.get(0, tk.END)
+  if not numbers:
+    messagebox.showerror("Error", "The list is empty! Cannot share an empty list.", parent=window)
+    return
+  
+  data = "\n".join([number.split(". ")[1] for number in numbers])
+  subject = "My Number List"
+  body = f"Here is my number list:\n\n{data}"
+  body = body.replace("\n", "%0D%0A")
+  mailto_link = f"mailto:?subject={subject}&body={body}"
+
+  window.clipboard_clear()
+  window.clipboard_append(mailto_link)
+  messagebox.showinfo("Share", "Mailto link copied to clipboard! Paste it in your mail client.", parent=window)
+
 def create_new_window():
   global counter
   window = tk.Tk()
@@ -758,7 +774,7 @@ def create_new_window():
   file_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="File", menu=file_menu)
   file_menu.add_command(label="New", command=lambda: create_new_window())
-  file_menu.add_command(label="Open",
+  file_menu.add_command(label="Import",
                         command=lambda: open_file(window, listbox))
   file_menu.add_command(label="Exit", command=lambda: exit_file(window))
   export_menu = tk.Menu(menubar, tearoff=0)
@@ -824,6 +840,10 @@ def create_new_window():
   theme_menu.add_command(label="Light Theme", command=lambda: change_theme("light"))
   theme_menu.add_command(label="Dark Theme", command=lambda: change_theme("dark"))
   menubar.add_cascade(label="Themes", menu=theme_menu)
+  share_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Share", menu=share_menu)
+  share_menu.add_command(label="Copy to Clipboard", command=lambda: copy_to_clipboard(window, listbox))
+  share_menu.add_command(label="Share via Email", command=lambda: share_via_email(window, listbox))
   
 
 def create_window():
@@ -847,7 +867,7 @@ def create_window():
   file_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="File", menu=file_menu)
   file_menu.add_command(label="New", command=lambda: create_new_window())
-  file_menu.add_command(label="Open",
+  file_menu.add_command(label="Import",
                         command=lambda: open_file(window, listbox))
   file_menu.add_command(label="Exit", command=lambda: exit_file(window))
   export_menu = tk.Menu(menubar, tearoff=0)
@@ -918,6 +938,10 @@ def create_window():
   theme_menu.add_command(label="Light Theme", command=lambda: change_theme("light"))
   theme_menu.add_command(label="Dark Theme", command=lambda: change_theme("dark"))
   menubar.add_cascade(label="Themes", menu=theme_menu)
+  share_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Share", menu=share_menu)
+  share_menu.add_command(label="Copy to Clipboard", command=lambda: copy_to_clipboard(window, listbox))
+  share_menu.add_command(label="Share via Email", command=lambda: share_via_email(window, listbox))
 create_window() 
 
 def main():
