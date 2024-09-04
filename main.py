@@ -1,4 +1,5 @@
 import tkinter as tk
+import statistics
 import csv
 import json
 from datetime import datetime
@@ -16,7 +17,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from ezodf import Sheet
 from odf.opendocument import OpenDocumentText
 from odf.text import P
-version = '(Version 0.66) '
+version = '(Version 0.69 BETA) '
 window = tk.Tk()
 window.file_extension = ''
 listbox = None
@@ -512,7 +513,7 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'Share It Far And Wide' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.68.194")
+  version_label = tk.Label(about_window, text="Version 0.69.255 BETA 1")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -754,6 +755,33 @@ def share_via_email(window, listbox):
   window.clipboard_clear()
   window.clipboard_append(mailto_link)
   messagebox.showinfo("Share", "Mailto link copied to clipboard! Paste it in your mail client.", parent=window)
+
+def calculate_mean(listbox):
+  numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
+  if not numbers:
+    messagebox.showerror("Error", "The list is empty! Cannot calculate statistics.", parent=window)
+    return
+  mean_value = statistics.mean(numbers)
+  messagebox.showinfo("Mean", f"The mean of the list is: {mean_value}")
+
+def calculate_median(listbox):
+  numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
+  if not numbers:
+    messagebox.showerror("Error", "The list is empty! Cannot calculate statistics.", parent=window)
+    return
+  median_value = statistics.median(numbers)
+  messagebox.showinfo("Median", f"The median of the list is: {median_value}")
+
+def calculate_mode(listbox):
+  numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
+  if not numbers:
+    messagebox.showerror("Error", "The list is empty! Cannot calculate statistics.", parent=window)
+    return
+  try:
+    mode_value = statistics.mode(numbers)
+    messagebox.showinfo("Mode", f"The mode of the list is: {mode_value}")
+  except statistics.StatisticsError:
+    messagebox.showinfo("Mode", "No unique mode found in the list.")
 
 def create_new_window():
   global counter
