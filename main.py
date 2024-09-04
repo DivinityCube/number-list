@@ -697,6 +697,24 @@ def export_to_csv(window, listbox):
       writer.writerow([number.split(". ")[1]])
   messagebox.showinfo("Export", f"List exported successfully to {file_path}", parent=window)
 
+def export_to_excel(window, listbox):
+  numbers = listbox.get(0, tk.END)
+  if not numbers:
+    messagebox.showerror("Error", "The list is empty! Cannot export an empty list.", parent=window)
+    return
+    
+  file_path = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")], parent=window)
+  if not file_path:
+    return
+    
+  workbook = openpyxl.Workbook()
+  sheet = workbook.active
+  for i, number in enumerate(numbers, start=1):
+    sheet.cell(row=i, column=1, value=number.split(". ")[1])
+    
+    workbook.save(file_path)
+    messagebox.showinfo("Export", f"List exported successfully to {file_path}", parent=window)
+
 def export_to_json(window, listbox):
   numbers = listbox.get(0, tk.END)
   if not numbers:
@@ -732,6 +750,11 @@ def create_new_window():
   file_menu.add_command(label="Open",
                         command=lambda: open_file(window, listbox))
   file_menu.add_command(label="Exit", command=lambda: exit_file(window))
+  export_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Export", menu=export_menu)
+  export_menu.add_command(label="Export to CSV", command=lambda: export_to_csv(window, listbox))
+  export_menu.add_command(label="Export to JSON", command=lambda: export_to_json(window, listbox))
+  export_menu.add_command(label="Export to Excel", command=lambda: export_to_excel(window, listbox))
   edit_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Edit", menu=edit_menu)
   edit_menu.add_command(label="Undo", command=lambda: undo(undo_redo_manager, listbox))
@@ -816,6 +839,11 @@ def create_window():
   file_menu.add_command(label="Open",
                         command=lambda: open_file(window, listbox))
   file_menu.add_command(label="Exit", command=lambda: exit_file(window))
+  export_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Export", menu=export_menu)
+  export_menu.add_command(label="Export to CSV", command=lambda: export_to_csv(window, listbox))
+  export_menu.add_command(label="Export to JSON", command=lambda: export_to_json(window, listbox))
+  export_menu.add_command(label="Export to Excel", command=lambda: export_to_excel(window, listbox))
   edit_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Edit", menu=edit_menu)
   edit_menu.add_command(label="Undo", command=lambda: undo(undo_redo_manager, listbox))
