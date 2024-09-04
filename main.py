@@ -510,9 +510,9 @@ def about(window):
     about_window.protocol("WM_DELETE_WINDOW", close_about)
   title_label = tk.Label(about_window, text="About Number List:")
   title_label.pack()
-  update_label = tk.Label(about_window, text="The 'History' Update")
+  update_label = tk.Label(about_window, text="The 'Share It Far And Wide' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.67.244-1")
+  version_label = tk.Label(about_window, text="Version 0.68.194 FINAL BETA")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -727,6 +727,17 @@ def export_to_json(window, listbox):
   with open(file_path, 'w') as file:
     json.dump(data, file, indent=4)
   messagebox.showinfo("Export", f"List exported successfully to {file_path}", parent=window)
+
+def copy_to_clipboard(window, listbox):
+  numbers = listbox.get(0, tk.END)
+  if not numbers:
+    messagebox.showerror("Error", "The list is empty! Cannot copy an empty list.", parent=window)
+    return
+    
+  data = "\n".join([number.split(". ")[1] for number in numbers])
+  window.clipboard_clear()
+  window.clipboard_append(data)
+  messagebox.showinfo("Copy", "List copied to clipboard!", parent=window)
 
 def create_new_window():
   global counter
