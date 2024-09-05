@@ -511,9 +511,9 @@ def about(window):
     about_window.protocol("WM_DELETE_WINDOW", close_about)
   title_label = tk.Label(about_window, text="About Number List:")
   title_label.pack()
-  update_label = tk.Label(about_window, text="The 'Share It Far And Wide' Update")
+  update_label = tk.Label(about_window, text="The 'Statistics' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.69.255 BETA 1")
+  version_label = tk.Label(about_window, text="Version 0.69.255 FINAL BETA")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -783,6 +783,22 @@ def calculate_mode(listbox):
   except statistics.StatisticsError:
     messagebox.showinfo("Mode", "No unique mode found in the list.")
 
+def calculate_variance(listbox):
+  numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
+  if not numbers:
+      messagebox.showerror("Error", "The list is empty! Cannot calculate statistics.", parent=window)
+      return
+  variance_value = statistics.variance(numbers)
+  messagebox.showinfo("Variance", f"The variance of the list is: {variance_value}")
+
+def calculate_standard_deviation(listbox):
+  numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
+  if not numbers:
+      messagebox.showerror("Error", "The list is empty! Cannot calculate statistics.", parent=window)
+      return
+  stddev_value = statistics.stdev(numbers)
+  messagebox.showinfo("Standard Deviation", f"The standard deviation of the list is: {stddev_value}")
+
 def create_new_window():
   global counter
   window = tk.Tk()
@@ -853,6 +869,13 @@ def create_new_window():
   history_menu.add_cascade(label="View History", command=lambda: view_history(history_manager))
   history_menu.add_cascade(label="Undo to Previous State", command=lambda: restore_history(history_manager.undo()))
   history_menu.add_cascade(label="Redo to Next State", command=lambda: restore_history(history_manager.redo()))
+  stats_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Statistics", menu=stats_menu)
+  stats_menu.add_command(label="Mean", command=lambda: calculate_mean(listbox))
+  stats_menu.add_command(label="Median", command=lambda: calculate_median(listbox))
+  stats_menu.add_command(label="Mode", command=lambda: calculate_mode(listbox))
+  stats_menu.add_command(label="Variance", command=lambda: calculate_variance(listbox))
+  stats_menu.add_command(label="Standard Deviation", command=lambda: calculate_standard_deviation(listbox))
   listbox = tk.Listbox(window)
   listbox.pack()
   entry = tk.Entry(window)
@@ -951,6 +974,13 @@ def create_window():
   history_menu.add_command(label="Undo to Previous State", command=lambda: restore_history(history_manager.undo()))
   history_menu.add_command(label="Redo to Next State", command=lambda: restore_history(history_manager.redo()))
   history_menu.add_command(label="Save Named Version", command=lambda: save_named_version(window, listbox, history_manager))
+  stats_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Statistics", menu=stats_menu)
+  stats_menu.add_command(label="Mean", command=lambda: calculate_mean(listbox))
+  stats_menu.add_command(label="Median", command=lambda: calculate_median(listbox))
+  stats_menu.add_command(label="Mode", command=lambda: calculate_mode(listbox))
+  stats_menu.add_command(label="Variance", command=lambda: calculate_variance(listbox))
+  stats_menu.add_command(label="Standard Deviation", command=lambda: calculate_standard_deviation(listbox))
   listbox = tk.Listbox(window)
   listbox.pack()
   entry = tk.Entry(window)
