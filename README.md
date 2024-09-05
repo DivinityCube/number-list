@@ -1,5 +1,7 @@
 Number List is a feature-rich number management tool created in Python, which also uses Tkinter libraries.
 
+Part of the PySuite group of apps.
+
 The old, deprecated GitLab repository has a Wiki and an archive of Versions 0.59 - 0.65-1 (excl. 0.64):
 https://gitlab.com/pysuite/number-list
 
