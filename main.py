@@ -13,6 +13,8 @@ import xlrd
 import pandas as pd
 import ezodf
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy import stats
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from ezodf import Sheet
 from odf.opendocument import OpenDocumentText
@@ -22,6 +24,93 @@ window = tk.Tk()
 window.file_extension = ''
 listbox = None
 counter = 1
+
+class DataTransformer():
+  def __init__(self, data):
+    self.data = np.array(data)
+
+  def min_max_scaling(self):
+    return (self.data - np.min(self.data)) / (np.max(self.data) - np.min(self.data))
+
+  def z_score_normalisation(self):
+    return (self.data - np.mean(self.data)) // np.std(self.data)
+  
+  def logarithmic_scaling(self):
+    return np.log1p(self.data - np.min(self.data))
+  
+  def exponential_scaling(self, base=2):
+    return np.power(base, self.data)
+  
+  def equal_width_binning(self, num_bins):
+    return pd.cut(self.data, bins=num_bins, labels=False)
+  
+  def equal_frequency_binning(self, num_bins):
+    return pd.qcut(self.data, q=num_bins, labels=False)
+  
+  def detect_outliers_iqr(self, factor=1.5):
+    Q1 = np.percentile(self.data, 25)
+    Q3 = np.percentile(self.data, 75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - factor * IQR
+    upper_bound = Q3 + factor * IQR
+    return (self.data < lower_bound) | (self.data > upper_bound)
+
+  def detect_outliers_zscore(self, threshold=3):
+    z_scores = np.abs(stats.zscore(self.data))
+    return z_scores > threshold
+  
+  def remove_outliers(self, method='iqr'):
+    if method == 'iqr':
+      outliers = self.detect_outliers_iqr()
+    elif method == 'zscore':
+      outliers = self.detect_outliers_zscore()
+    else:
+      raise ValueError("Method must be either 'iqr' or 'zscore'")
+    return self.data[~outliers]
+  
+  def cap_outliers(self, method='iqr'):
+    if method == 'iqr':
+      outliers = self.detect_outliers_iqr()
+      Q1 = np.percentile(self.data, 25)
+      Q3 = np.percentile(self.data, 75)
+      IQR = Q3 - Q1
+      lower_bound = Q1 - 1.5 * IQR
+      upper_bound = Q3 + 1.5 * IQR
+    elif method == 'zscore':
+      outliers = self.detect_outliers_zscore()
+      lower_bound = np.mean(self.data) - 3 * np.std(self.data)
+      upper_bound = np.mean(self.data) + 3 * np.std(self.data)
+    else:
+      raise ValueError("Method must be 'iqr' or 'zscore'")
+    
+    data_capped = np.clip(self.data, lower_bound, upper_bound)
+    return data_capped
+  
+  def impute_missing_values(self, method='mean'):
+    if method == 'mean':
+      return np.nan_to_num(self.data, nan=np.nanmean(self.data))
+    elif method == 'median':
+      return np.nan_to_num(self.data, nan=np.nanmedian(self.data))
+    elif method == 'mode':
+      return np.nan_to_num(self.data, nan=stats.mode(self.data, keepdims=True)[0][0])
+    else:
+      raise ValueError("Method must be 'mean', 'median', or 'mode'")
+  
+  def create_lag(self, lag):
+    return np.concatenate([np.full(lag, np.nan), self.data[:-lag]])
+  
+  def difference(self, order=1):
+    return np.diff(self.data, n=order)
+  
+  def rolling_statistic(self, window, statistic='mean'):
+        if statistic == 'mean':
+            return np.convolve(self.data, np.ones(window), 'valid') / window
+        elif statistic == 'sum':
+            return np.convolve(self.data, np.ones(window), 'valid')
+        elif statistic == 'std':
+            return pd.Series(self.data).rolling(window=window).std().dropna().values
+        else:
+            raise ValueError("Statistic must be 'mean', 'sum', or 'std'")
 
 class Command:
   def execute(self):
@@ -511,9 +600,9 @@ def about(window):
     about_window.protocol("WM_DELETE_WINDOW", close_about)
   title_label = tk.Label(about_window, text="About Number List:")
   title_label.pack()
-  update_label = tk.Label(about_window, text="The 'Statistics' Update")
+  update_label = tk.Label(about_window, text="The 'Transformative' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.69.255")
+  version_label = tk.Label(about_window, text="Version 0.70 BETA")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -817,6 +906,69 @@ def calculate_standard_deviation(listbox):
       return
   stddev_value = statistics.stdev(numbers)
   messagebox.showinfo("Standard Deviation", f"The standard deviation of the list is: {stddev_value}")
+
+def apply_transformation(window, listbox, transformation, **kwargs):
+    numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
+    transformer = DataTransformer(numbers)
+    
+    try:
+        if transformation == 'min_max':
+            result = transformer.min_max_scaling()
+        elif transformation == 'z_score':
+            result = transformer.z_score_normalisation()
+        elif transformation == 'log':
+            result = transformer.logarithmic_scaling()
+        elif transformation == 'exp':
+            result = transformer.exponential_scaling()
+        elif transformation == 'equal_width_bin':
+            num_bins = kwargs.get('num_bins', 5)
+            result = transformer.equal_width_binning(num_bins)
+        elif transformation == 'equal_freq_bin':
+            num_bins = kwargs.get('num_bins', 5)
+            result = transformer.equal_frequency_binning(num_bins)
+        elif transformation == 'remove_outliers':
+            method = kwargs.get('method', 'iqr')
+            result = transformer.remove_outliers(method)
+        elif transformation == 'cap_outliers':
+            method = kwargs.get('method', 'iqr')
+            result = transformer.cap_outliers(method)
+        elif transformation == 'impute_missing':
+            method = kwargs.get('method', 'mean')
+            result = transformer.impute_missing_values(method)
+        elif transformation == 'lag':
+            lag = kwargs.get('lag', 1)
+            result = transformer.create_lag(lag)
+        elif transformation == 'difference':
+            order = kwargs.get('order', 1)
+            result = transformer.difference(order)
+        elif transformation == 'rolling':
+            window = kwargs.get('window', 3)
+            statistic = kwargs.get('statistic', 'mean')
+            result = transformer.rolling_statistic(window, statistic)
+        else:
+            raise ValueError(f"Unknown transformation: {transformation}")
+        
+        listbox.delete(0, tk.END)
+        for i, value in enumerate(result, start=1):
+            listbox.insert(tk.END, f"{i}. {value}")
+        
+        messagebox.showinfo("Transformation Applied", f"The {transformation} transformation has been applied successfully.", parent=window)
+    except Exception as e:
+        messagebox.showerror("Error", str(e), parent=window)
+
+def create_transformation_window(window, listbox, transformation):
+  trans_window = tk.Toplevel(window)
+  trans_window.title(f"Apply {transformation.capitalize()} Transformation")
+
+  if transformation in ['equal_width_bin', 'equal_freq_bin']:
+    ttk.Label(trans_window, text="Number of bins:").pack(pady=5)
+    num_bins_entry = ttk.Entry(trans_window)
+    num_bins_entry.pack(pady=5)
+    num_bins_entry.insert(0, "5")
+
+    ttk.Button(trans_window, text="Apply",
+               command=lambda: apply_transformation(window, listbox, transformation,
+                                                    num_bins=int(num_bins_entry.get()))).pack(pady=10)
 
 def create_new_window():
   global counter
