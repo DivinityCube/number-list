@@ -17,7 +17,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from ezodf import Sheet
 from odf.opendocument import OpenDocumentText
 from odf.text import P
-version = '(Version 0.69 BETA) '
+version = '(Version 0.69) '
 window = tk.Tk()
 window.file_extension = ''
 listbox = None
@@ -513,7 +513,7 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'Statistics' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.69.255 FINAL BETA")
+  version_label = tk.Label(about_window, text="Version 0.69.255")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -570,6 +570,15 @@ def create_graph(window, listbox):
     canvas = FigureCanvasTkAgg(fig, master=graph_window)
     canvas_widget = canvas.get_tk_widget()
     canvas_widget.pack()
+
+    def save_graph():
+        file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png"), ("All files", "*.*")])
+        if file_path:
+            fig.savefig(file_path)
+            messagebox.showinfo("Success", f"Graph saved as {file_path}", parent=graph_window)
+
+    save_button = tk.Button(graph_window, text="Save Graph", command=save_graph)
+    save_button.pack(pady=10)
   
 def create_advanced_graph(window, listbox):
     numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
@@ -579,18 +588,35 @@ def create_advanced_graph(window, listbox):
 
     graph_window = tk.Toplevel(window)
     graph_window.title("Advanced Graph")
-    graph_window.geometry("800x600")
+
+    main_frame = ttk.Frame(graph_window)
+    main_frame.pack(fill='both', expand=True, padx=10, pady=10)
+    control_frame = ttk.Frame(main_frame)
+    control_frame.pack(fill='x', pady=(0, 10))
 
     graph_types = ["Line", "Bar", "Scatter", "Pie"]
     graph_type_var = tk.StringVar(value="Line")
-    ttk.Label(graph_window, text="Graph Type:").pack()
-    type_combo = ttk.Combobox(graph_window, textvariable=graph_type_var, values=graph_types)
-    type_combo.pack()
+    ttk.Label(control_frame, text="Graph Type:").pack(side='left', padx=(0, 5))
+    type_combo = ttk.Combobox(control_frame, textvariable=graph_type_var, values=graph_types, width=10)
+    type_combo.pack(side='left', padx=(0, 10))
 
     color_var = tk.StringVar(value="#1f77b4")
-    ttk.Label(graph_window, text="Graph Color:").pack()
-    color_button = ttk.Button(graph_window, text="Choose Color")
-    color_button.pack()
+    ttk.Label(control_frame, text="Graph Color:").pack(side='left', padx=(0, 5))
+    color_button = ttk.Button(control_frame, text="Choose Color", width=15)
+    color_button.pack(side='left', padx=(0, 10))
+
+    title_var = tk.StringVar(value="Number List Graph")
+    ttk.Label(control_frame, text="Graph Title:").pack(side='left', padx=(0, 5))
+    title_entry = ttk.Entry(control_frame, textvariable=title_var, width=20)
+    title_entry.pack(side='left')
+
+    graph_frame = ttk.Frame(main_frame)
+    graph_frame.pack(fill='both', expand=True)
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    canvas = FigureCanvasTkAgg(fig, master=graph_frame)
+    canvas_widget = canvas.get_tk_widget()
+    canvas_widget.pack(fill='both', expand=True)
 
     def choose_color():
         color = colorchooser.askcolor(color_var.get())[1]
@@ -599,16 +625,6 @@ def create_advanced_graph(window, listbox):
         update_graph()
 
     color_button.config(command=choose_color)
-
-    title_var = tk.StringVar(value="Number List Graph")
-    ttk.Label(graph_window, text="Graph Title:").pack()
-    title_entry = ttk.Entry(graph_window, textvariable=title_var)
-    title_entry.pack()
-
-    fig, ax = plt.subplots(figsize=(8, 6))
-    canvas = FigureCanvasTkAgg(fig, master=graph_window)
-    canvas_widget = canvas.get_tk_widget()
-    canvas_widget.pack(expand=True, fill=tk.BOTH)
 
     def update_graph(*args):
         ax.clear()
@@ -636,17 +652,20 @@ def create_advanced_graph(window, listbox):
     graph_type_var.trace_add("write", update_graph)
     title_var.trace_add("write", update_graph)
 
-    update_button = ttk.Button(graph_window, text="Update Graph", command=update_graph)
-    update_button.pack()
-
     def save_graph():
         file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png"), ("All files", "*.*")])
         if file_path:
             fig.savefig(file_path)
             messagebox.showinfo("Success", f"Graph saved as {file_path}", parent=graph_window)
 
-    save_button = ttk.Button(graph_window, text="Save Graph", command=save_graph)
-    save_button.pack()
+    button_frame = ttk.Frame(main_frame)
+    button_frame.pack(fill='x', pady=(10, 0))
+
+    update_button = ttk.Button(button_frame, text="Update Graph", command=update_graph)
+    update_button.pack(side='left', padx=4)
+
+    save_button = ttk.Button(button_frame, text="Save Graph", command=save_graph)
+    save_button.pack(side='left', padx=5)
 
     update_graph()
 
