@@ -19,7 +19,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from ezodf import Sheet
 from odf.opendocument import OpenDocumentText
 from odf.text import P
-version = '(Version 0.69) '
+version = '(Version 0.70 BETA 2) '
 window = tk.Tk()
 window.file_extension = ''
 listbox = None
@@ -602,7 +602,7 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'Transformative' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.70 BETA")
+  version_label = tk.Label(about_window, text="Version 0.70 BETA 2")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -969,6 +969,64 @@ def create_transformation_window(window, listbox, transformation):
     ttk.Button(trans_window, text="Apply",
                command=lambda: apply_transformation(window, listbox, transformation,
                                                     num_bins=int(num_bins_entry.get()))).pack(pady=10)
+
+  elif transformation in ['remove_outliers', 'cap_outliers']:
+        method_var = tk.StringVar(value="iqr")
+        ttk.Radiobutton(trans_window, text="IQR Method", variable=method_var, value="iqr").pack()
+        ttk.Radiobutton(trans_window, text="Z-Score Method", variable=method_var, value="zscore").pack()
+        
+        ttk.Button(trans_window, text="Apply", 
+                   command=lambda: apply_transformation(window, listbox, transformation, 
+                                                        method=method_var.get())).pack(pady=10)
+  
+  elif transformation == 'impute_missing':
+        method_var = tk.StringVar(value="mean")
+        ttk.Radiobutton(trans_window, text="Mean", variable=method_var, value="mean").pack()
+        ttk.Radiobutton(trans_window, text="Median", variable=method_var, value="median").pack()
+        ttk.Radiobutton(trans_window, text="Mode", variable=method_var, value="mode").pack()
+        
+        ttk.Button(trans_window, text="Apply", 
+                   command=lambda: apply_transformation(window, listbox, transformation, 
+                                                        method=method_var.get())).pack(pady=10)
+  
+  elif transformation == 'lag':
+        ttk.Label(trans_window, text="Lag value:").pack(pady=5)
+        lag_entry = ttk.Entry(trans_window)
+        lag_entry.pack(pady=5)
+        lag_entry.insert(0, "1")
+        
+        ttk.Button(trans_window, text="Apply", 
+                   command=lambda: apply_transformation(window, listbox, transformation, 
+                                                        lag=int(lag_entry.get()))).pack(pady=10)
+  elif transformation == 'difference':
+    ttk.Label(trans_window, text="Difference order:").pack(pady=5)
+    order_entry = ttk.Entry(trans_window)
+    order_entry.pack(pady=5)
+    order_entry.insert(0, "1")
+
+    ttk.Button(trans_window, text="Apply", 
+                   command=lambda: apply_transformation(window, listbox, transformation, 
+                                                        order=int(order_entry.get()))).pack(pady=10)
+  
+  elif transformation == 'rolling':
+        ttk.Label(trans_window, text="Window size:").pack(pady=5)
+        window_entry = ttk.Entry(trans_window)
+        window_entry.pack(pady=5)
+        window_entry.insert(0, "3")
+        
+        statistic_var = tk.StringVar(value="mean")
+        ttk.Radiobutton(trans_window, text="Mean", variable=statistic_var, value="mean").pack()
+        ttk.Radiobutton(trans_window, text="Sum", variable=statistic_var, value="sum").pack()
+        ttk.Radiobutton(trans_window, text="Standard Deviation", variable=statistic_var, value="std").pack()
+        
+        ttk.Button(trans_window, text="Apply", 
+                   command=lambda: apply_transformation(window, listbox, transformation, 
+                                                        window=int(window_entry.get()),
+                                                        statistic=statistic_var.get())).pack(pady=10)
+    
+  else:
+      ttk.Button(trans_window, text="Apply", 
+                  command=lambda: apply_transformation(window, listbox, transformation)).pack(pady=10)
 
 def create_new_window():
   global counter
