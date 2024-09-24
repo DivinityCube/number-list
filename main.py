@@ -1105,6 +1105,42 @@ def create_new_window():
   stats_menu.add_command(label="Mode", command=lambda: calculate_mode(listbox))
   stats_menu.add_command(label="Variance", command=lambda: calculate_variance(listbox))
   stats_menu.add_command(label="Standard Deviation", command=lambda: calculate_standard_deviation(listbox))
+  transform_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Transform", menu=transform_menu)
+  normalize_menu = tk.Menu(transform_menu, tearoff=0)
+  transform_menu.add_cascade(label="Normalize", menu=normalize_menu)
+  normalize_menu.add_command(label="Min-Max Scaling", 
+                               command=lambda: create_transformation_window(window, listbox, 'min_max'))
+  normalize_menu.add_command(label="Z-Score Normalization", 
+                               command=lambda: create_transformation_window(window, listbox, 'z_score'))
+  scale_menu = tk.Menu(transform_menu, tearoff=0)
+  transform_menu.add_cascade(label="Scale", menu=scale_menu)
+  scale_menu.add_command(label="Logarithmic Scaling", 
+                           command=lambda: create_transformation_window(window, listbox, 'log'))
+  scale_menu.add_command(label="Exponential Scaling", 
+                           command=lambda: create_transformation_window(window, listbox, 'exp'))
+  bin_menu = tk.Menu(transform_menu, tearoff=0)
+  transform_menu.add_cascade(label="Binning", menu=bin_menu)
+  bin_menu.add_command(label="Equal-width Binning", 
+                         command=lambda: create_transformation_window(window, listbox, 'equal_width_bin'))
+  bin_menu.add_command(label="Equal-frequency Binning", 
+                         command=lambda: create_transformation_window(window, listbox, 'equal_freq_bin'))
+  outlier_menu = tk.Menu(transform_menu, tearoff=0)
+  transform_menu.add_cascade(label="Outlier Handling", menu=outlier_menu)
+  outlier_menu.add_command(label="Remove Outliers", 
+                             command=lambda: create_transformation_window(window, listbox, 'remove_outliers'))
+  outlier_menu.add_command(label="Cap Outliers", 
+                             command=lambda: create_transformation_window(window, listbox, 'cap_outliers'))
+  transform_menu.add_command(label="Impute Missing Values", 
+                               command=lambda: create_transformation_window(window, listbox, 'impute_missing'))
+  time_series_menu = tk.Menu(transform_menu, tearoff=0)
+  transform_menu.add_cascade(label="Time Series", menu=time_series_menu)
+  time_series_menu.add_command(label="Create Lag", 
+                                 command=lambda: create_transformation_window(window, listbox, 'lag'))
+  time_series_menu.add_command(label="Difference", 
+                                 command=lambda: create_transformation_window(window, listbox, 'difference'))
+  time_series_menu.add_command(label="Rolling Statistics", 
+                                 command=lambda: create_transformation_window(window, listbox, 'rolling'))
   listbox = tk.Listbox(window)
   listbox.pack()
   entry = tk.Entry(window)
@@ -1210,6 +1246,42 @@ def create_window():
   stats_menu.add_command(label="Mode", command=lambda: calculate_mode(listbox))
   stats_menu.add_command(label="Variance", command=lambda: calculate_variance(listbox))
   stats_menu.add_command(label="Standard Deviation", command=lambda: calculate_standard_deviation(listbox))
+  transform_menu = tk.Menu(menubar, tearoff=0)
+  menubar.add_cascade(label="Transform", menu=transform_menu)
+  normalize_menu = tk.Menu(transform_menu, tearoff=0)
+  transform_menu.add_cascade(label="Normalize", menu=normalize_menu)
+  normalize_menu.add_command(label="Min-Max Scaling", 
+                               command=lambda: create_transformation_window(window, listbox, 'min_max'))
+  normalize_menu.add_command(label="Z-Score Normalization", 
+                               command=lambda: create_transformation_window(window, listbox, 'z_score'))
+  scale_menu = tk.Menu(transform_menu, tearoff=0)
+  transform_menu.add_cascade(label="Scale", menu=scale_menu)
+  scale_menu.add_command(label="Logarithmic Scaling", 
+                           command=lambda: create_transformation_window(window, listbox, 'log'))
+  scale_menu.add_command(label="Exponential Scaling", 
+                           command=lambda: create_transformation_window(window, listbox, 'exp'))
+  bin_menu = tk.Menu(transform_menu, tearoff=0)
+  transform_menu.add_cascade(label="Binning", menu=bin_menu)
+  bin_menu.add_command(label="Equal-width Binning", 
+                         command=lambda: create_transformation_window(window, listbox, 'equal_width_bin'))
+  bin_menu.add_command(label="Equal-frequency Binning", 
+                         command=lambda: create_transformation_window(window, listbox, 'equal_freq_bin'))
+  outlier_menu = tk.Menu(transform_menu, tearoff=0)
+  transform_menu.add_cascade(label="Outlier Handling", menu=outlier_menu)
+  outlier_menu.add_command(label="Remove Outliers", 
+                             command=lambda: create_transformation_window(window, listbox, 'remove_outliers'))
+  outlier_menu.add_command(label="Cap Outliers", 
+                             command=lambda: create_transformation_window(window, listbox, 'cap_outliers'))
+  transform_menu.add_command(label="Impute Missing Values", 
+                               command=lambda: create_transformation_window(window, listbox, 'impute_missing'))
+  time_series_menu = tk.Menu(transform_menu, tearoff=0)
+  transform_menu.add_cascade(label="Time Series", menu=time_series_menu)
+  time_series_menu.add_command(label="Create Lag", 
+                                 command=lambda: create_transformation_window(window, listbox, 'lag'))
+  time_series_menu.add_command(label="Difference", 
+                                 command=lambda: create_transformation_window(window, listbox, 'difference'))
+  time_series_menu.add_command(label="Rolling Statistics", 
+                                 command=lambda: create_transformation_window(window, listbox, 'rolling'))
   listbox = tk.Listbox(window)
   listbox.pack()
   entry = tk.Entry(window)
