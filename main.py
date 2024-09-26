@@ -200,40 +200,55 @@ class SortCommand(Command):
     for number in numbers:
       self.listbox.insert(tk.END, number)
 
-class FilterCommand(Command):
-  def __init__(self, listbox, undo_redo_manager, filter_function):
-        self.listbox = listbox
-        self.undo_redo_manager = undo_redo_manager
-        self.filter_function = filter_function
-        self.previous_state = None
-        self.filtered_numbers = None
+class FilterCommand:
+  def __init__(self, listbox, filter_function, description):
+      self.listbox = listbox
+      self.filter_function = filter_function
+      self.description = description
+      self.original_numbers = [item.split(". ")[1] for item in self.listbox.get(0, tk.END)]
 
   def execute(self):
-      self.previous_state = list(self.listbox.get(0, tk.END))
-      if not self.previous_state:
-        messagebox.showerror("Error", "The list is empty! Cannot filter an empty list.", parent=window)
-        return
-      numbers = [float(item.split(". ")[1]) for item in self.previous_state]
-      filtered = self.filter_function(numbers)
-      if not filtered:
-        messagebox.showinfo("Info", "No numbers match the filtering criteria.", parent=window)
-        return
-      self.filtered_numbers = [f"{i + 1}. {number}" for i, number in enumerate(filtered)]
-      self.update_listbox(self.filtered_numbers)
+      filtered_numbers = list(filter(self.filter_function, self.original_numbers))
+      self.listbox.delete(0, tk.END)
+      for i, num in enumerate(filtered_numbers, start=1):
+        self.listbox.insert(tk.END, f"{i}. {num}")
 
   def undo(self):
-      if self.previous_state:
-          self.update_listbox(self.previous_state)
+      self.listbox.delete(0, tk.END)
+      for i, num in enumerate(self.original_numbers, start=1):
+        self.listbox.insert(tk.END, f"{i}. {num}")
 
   def update_listbox(self, numbers):
       self.listbox.delete(0, tk.END)
       for number in numbers:
-          self.listbox.insert(tk.END, number)
+        self.listbox.insert(tk.END, number)
 
 class HistoryManager:
   def __init__(self):
-    self.history = []
-    self.current_index = -1
+      self.history = []
+      self.current_index = -1
+
+  def add_action(self, action):
+      self.history = self.history[:self.current_index + 1]
+      self.history.append(action)
+      self.current_index += 1
+
+  def undo(self):
+      if self.current_index >= 0:
+          self.current_index -= 1
+          return self.history[self.current_index + 1]
+      return None
+
+  def redo(self):
+      if self.current_index < len(self.history) - 1:
+          self.current_index += 1
+          return self.history[self.current_index]
+      return None
+
+  def get_current_action(self):
+      if 0 <= self.current_index < len(self.history):
+          return self.history[self.current_index]
+      return None
 
   def add_state(self, state, name=None):
     if self.current_index < len(self.history) - 1:
@@ -242,23 +257,6 @@ class HistoryManager:
     version_name = name if name else f"Version {len(self.history) + 1}"
     self.history.append((version_name, state))
     self.current_index += 1
-  
-  def undo(self):
-    if self.current_index > 0:
-      self.current_index -= 1
-      return self.history[self.current_index][1]
-    return None
-  
-  def redo(self):
-    if self.current_index < len(self.history) - 1:
-      self.current_index += 1
-      return self.history[self.current_index][1]
-    return None
-  
-  def get_current_state(self):
-    if self.history:
-      return self.history[self.current_index][1]
-    return None
 
   def get_history(self):
     return self.history
@@ -773,22 +771,46 @@ def update_listbox_with_numbers(listbox, numbers):
   for i, number in enumerate(numbers, 1):
     listbox.insert(tk.END, f"{i}, {number}")
 
-def filter_even_numbers(window, listbox, undo_redo_manager):
-  command = FilterCommand(listbox, undo_redo_manager, lambda numbers: [num for num in numbers if num % 2 == 0])
-  undo_redo_manager.execute(command)
+def filter_even_numbers(window, listbox, undo_redo_manager, history_manager):
+    def even_filter(num):
+        return float(num) % 2 == 0
+    command = FilterCommand(listbox, even_filter, "Filter Even Numbers")
+    undo_redo_manager.execute(command)
+    history_manager.add_action("Filtered even numbers")
 
-def filter_odd_numbers(window, listbox, undo_redo_manager):
-  command = FilterCommand(listbox, undo_redo_manager, lambda numbers: [num for num in numbers if num % 2 != 0])
-  undo_redo_manager.execute(command)
+def filter_odd_numbers(window, listbox, undo_redo_manager, history_manager):
+    def odd_filter(num):
+        return float(num) % 2 != 0
+    command = FilterCommand(listbox, odd_filter, "Filter Odd Numbers")
+    undo_redo_manager.execute(command)
+    history_manager.add_action("Filtered odd numbers")
 
-def filter_custom_range(window, listbox, undo_redo_manager):
-  if not listbox.size():
-    messagebox.showerror("Error", "The list is empty! Cannot filter an empty list.", parent=window)
-    return
-  min_value = float(simpledialog.askstring("Input", "Enter minimum value:", parent=window))
-  max_value = float(simpledialog.askstring("Input", "Enter maximum value:", parent=window))
-  command = FilterCommand(listbox, undo_redo_manager, lambda numbers: [num for num in numbers if min_value <= num <= max_value])
-  undo_redo_manager.execute(command)
+def filter_custom_range(window, listbox, undo_redo_manager, history_manager):
+    def apply_filter():
+        try:
+            min_val = float(min_entry.get())
+            max_val = float(max_entry.get())
+            def range_filter(num):
+                return min_val <= float(num) <= max_val
+            command = FilterCommand(listbox, range_filter, f"Filter Range {min_val} to {max_val}")
+            undo_redo_manager.execute(command)
+            history_manager.add_action(f"Filtered range {min_val} to {max_val}")
+            filter_window.destroy()
+        except ValueError:
+            messagebox.showerror("Error", "Please enter valid numbers for the range.")
+
+    filter_window = tk.Toplevel(window)
+    filter_window.title("Filter Custom Range")
+
+    tk.Label(filter_window, text="Minimum value:").pack()
+    min_entry = tk.Entry(filter_window)
+    min_entry.pack()
+
+    tk.Label(filter_window, text="Maximum value:").pack()
+    max_entry = tk.Entry(filter_window)
+    max_entry.pack()
+
+    tk.Button(filter_window, text="Apply Filter", command=apply_filter).pack()
 
 def export_to_csv(window, listbox):
   numbers = listbox.get(0, tk.END)
@@ -1086,9 +1108,12 @@ def create_new_window():
   sort_menu.add_command(label="Ascending", command=lambda: sort_numbers_ascending(window, listbox, undo_redo_manager))
   sort_menu.add_command(label="Descending", command=lambda: sort_numbers_descending(window, listbox, undo_redo_manager))
   filter_menu = tk.Menu(math_menu, tearoff=0)
-  filter_menu.add_command(label="Even Numbers", command=lambda: filter_even_numbers(window, listbox, undo_redo_manager))
-  filter_menu.add_command(label="Odd Numbers", command=lambda: filter_odd_numbers(window, listbox, undo_redo_manager))
-  filter_menu.add_command(label="Custom Range", command=lambda: filter_custom_range(window, listbox, undo_redo_manager))
+  filter_menu.add_command(label="Even Numbers", 
+                            command=lambda: filter_even_numbers(window, listbox, undo_redo_manager, history_manager))
+  filter_menu.add_command(label="Odd Numbers", 
+                            command=lambda: filter_odd_numbers(window, listbox, undo_redo_manager, history_manager))
+  filter_menu.add_command(label="Custom Range", 
+                            command=lambda: filter_custom_range(window, listbox, undo_redo_manager, history_manager))
   graph_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Graph", menu=graph_menu)
   graph_menu.add_command(label="Create Graph", command=lambda: create_graph(window, listbox))
@@ -1226,9 +1251,12 @@ def create_window():
   sort_menu.add_command(label="Descending", command=lambda: sort_numbers_descending(window, listbox, undo_redo_manager, history_manager))
   filter_menu = tk.Menu(math_menu, tearoff=0)
   math_menu.add_cascade(label="Filter", menu=filter_menu)
-  filter_menu.add_command(label="Even Numbers", command=lambda: filter_even_numbers(window, listbox, undo_redo_manager, history_manager))
-  filter_menu.add_command(label="Odd Numbers", command=lambda: filter_odd_numbers(window, listbox, undo_redo_manager, history_manager))
-  filter_menu.add_command(label="Custom Range", command=lambda: filter_custom_range(window, listbox, undo_redo_manager, history_manager))
+  filter_menu.add_command(label="Even Numbers", 
+                            command=lambda: filter_even_numbers(window, listbox, undo_redo_manager, history_manager))
+  filter_menu.add_command(label="Odd Numbers", 
+                            command=lambda: filter_odd_numbers(window, listbox, undo_redo_manager, history_manager))
+  filter_menu.add_command(label="Custom Range", 
+                            command=lambda: filter_custom_range(window, listbox, undo_redo_manager, history_manager))
   graph_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Graph", menu=graph_menu)
   graph_menu.add_command(label="Create Graph", command=lambda: create_graph(window, listbox))
