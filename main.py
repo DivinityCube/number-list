@@ -19,7 +19,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from ezodf import Sheet
 from odf.opendocument import OpenDocumentText
 from odf.text import P
-version = '(Version 0.70 BETA 2) '
+version = '(Version 0.71 BETA) '
 window = tk.Tk()
 window.file_extension = ''
 listbox = None
@@ -598,9 +598,9 @@ def about(window):
     about_window.protocol("WM_DELETE_WINDOW", close_about)
   title_label = tk.Label(about_window, text="About Number List:")
   title_label.pack()
-  update_label = tk.Label(about_window, text="The 'Transformative' Update")
+  update_label = tk.Label(about_window, text="The 'Visual Data' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.70-1")
+  version_label = tk.Label(about_window, text="Version 0.71 BETA")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -1050,6 +1050,69 @@ def create_transformation_window(window, listbox, transformation):
       ttk.Button(trans_window, text="Apply", 
                   command=lambda: apply_transformation(window, listbox, transformation)).pack(pady=10)
 
+def create_histogram(window, listbox):
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+    numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
+    if not numbers:
+        messagebox.showerror("Error", "The list is empty! Cannot create a histogram.", parent=window)
+        return
+
+    hist_window = tk.Toplevel(window)
+    hist_window.title("Histogram")
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.hist(numbers, bins='auto', color='#1f77b4', edgecolor='black')
+    ax.set_xlabel('Value')
+    ax.set_ylabel('Frequency')
+    ax.set_title('Histogram')
+
+    canvas = FigureCanvasTkAgg(fig, master=hist_window)
+    canvas_widget = canvas.get_tk_widget()
+    canvas_widget.pack()
+
+    def save_histogram():
+        file_path = filedialog.asksaveasfilename(defaultextension=".png",
+                                                 filetypes=[("PNG files", "*.png"), ("All files", "*.*")])
+        if file_path:
+            fig.savefig(file_path)
+            messagebox.showinfo("Success", f"Histogram saved as {file_path}", parent=hist_window)
+
+    save_button = tk.Button(hist_window, text="Save Histogram", command=save_histogram)
+    save_button.pack(pady=10)
+
+def create_box_plot(window, listbox):
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+    numbers = [float(item.split(". ")[1]) for item in listbox.get(0, tk.END)]
+    if not numbers:
+        messagebox.showerror("Error", "The list is empty! Cannot create a box plot.", parent=window)
+        return
+
+    box_window = tk.Toplevel(window)
+    box_window.title("Box Plot")
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.boxplot(numbers, vert=True, patch_artist=True)
+    ax.set_ylabel('Value')
+    ax.set_title('Box Plot')
+
+    canvas = FigureCanvasTkAgg(fig, master=box_window)
+    canvas_widget = canvas.get_tk_widget()
+    canvas_widget.pack()
+
+    def save_box_plot():
+        file_path = filedialog.asksaveasfilename(defaultextension=".png",
+                                                 filetypes=[("PNG files", "*.png"), ("All files", "*.*")])
+        if file_path:
+            fig.savefig(file_path)
+            messagebox.showinfo("Success", f"Box plot saved as {file_path}", parent=box_window)
+
+    save_button = tk.Button(box_window, text="Save Box Plot", command=save_box_plot)
+    save_button.pack(pady=10)
+
 def create_new_window():
   global counter
   window = tk.Tk()
@@ -1118,6 +1181,8 @@ def create_new_window():
   menubar.add_cascade(label="Graph", menu=graph_menu)
   graph_menu.add_command(label="Create Graph", command=lambda: create_graph(window, listbox))
   graph_menu.add_command(label="Create Advanced Graph", command=lambda: create_advanced_graph(window, listbox))
+  graph_menu.add_command(label="Create Histogram", command=lambda: create_histogram(window, listbox))
+  graph_menu.add_command(label="Create Box Plot", command=lambda: create_box_plot(window, listbox))
   history_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="History", menu=history_menu)
   history_menu.add_cascade(label="View History", command=lambda: view_history(history_manager))
@@ -1261,6 +1326,8 @@ def create_window():
   menubar.add_cascade(label="Graph", menu=graph_menu)
   graph_menu.add_command(label="Create Graph", command=lambda: create_graph(window, listbox))
   graph_menu.add_command(label="Create Advanced Graph", command=lambda: create_advanced_graph(window, listbox))
+  graph_menu.add_command(label="Create Histogram", command=lambda: create_histogram(window, listbox))
+  graph_menu.add_command(label="Create Box Plot", command=lambda: create_box_plot(window, listbox))
   history_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="History", menu=history_menu)
   history_menu.add_command(label="View History", command=lambda: view_history(history_manager))
