@@ -30,10 +30,14 @@ class DataTransformer():
     self.data = np.array(data)
 
   def min_max_scaling(self):
-    return (self.data - np.min(self.data)) / (np.max(self.data) - np.min(self.data))
+    min_vals = np.min(self.data, axis=0, keepdims=True)
+    max_vals = np.max(self.data, axis=0, keepdims=True)
+    return (self.data - min_vals) / (max_vals - min_vals)
 
   def z_score_normalisation(self):
-    return (self.data - np.mean(self.data)) // np.std(self.data)
+    mean_vals = np.mean(self.data, axis=0, keepdims=True)
+    std_vals = np.std(self.data, axis=0, keepdims=True)
+    return (self.data - mean_vals) / std_vals
   
   def logarithmic_scaling(self):
     return np.log1p(self.data - np.min(self.data))
@@ -42,21 +46,22 @@ class DataTransformer():
     return np.power(base, self.data)
   
   def equal_width_binning(self, num_bins):
-    return pd.cut(self.data, bins=num_bins, labels=False)
+    bins = np.linspace(np.min(self.data), np.max(self.data), num_bins + 1)
+    return np.digitize(self.data, bins) - 1
   
   def equal_frequency_binning(self, num_bins):
-    return pd.qcut(self.data, q=num_bins, labels=False)
+    return pd.qcut(self.data.flatten(), q=num_bins, labels=False).reshape(self.data.shape)
   
   def detect_outliers_iqr(self, factor=1.5):
-    Q1 = np.percentile(self.data, 25)
-    Q3 = np.percentile(self.data, 75)
+    Q1 = np.percentile(self.data, 25, axis=0, keepdims=True)
+    Q3 = np.percentile(self.data, 75, axis=0, keepdims=True)
     IQR = Q3 - Q1
     lower_bound = Q1 - factor * IQR
     upper_bound = Q3 + factor * IQR
     return (self.data < lower_bound) | (self.data > upper_bound)
 
   def detect_outliers_zscore(self, threshold=3):
-    z_scores = np.abs(stats.zscore(self.data))
+    z_scores = np.abs(stats.zscore(self.data, axis=0))
     return z_scores > threshold
   
   def remove_outliers(self, method='iqr'):
@@ -66,51 +71,50 @@ class DataTransformer():
       outliers = self.detect_outliers_zscore()
     else:
       raise ValueError("Method must be either 'iqr' or 'zscore'")
-    return self.data[~outliers]
+    return self.data[~outliers.any(axis=1)]
   
   def cap_outliers(self, method='iqr'):
     if method == 'iqr':
       outliers = self.detect_outliers_iqr()
-      Q1 = np.percentile(self.data, 25)
-      Q3 = np.percentile(self.data, 75)
+      Q1 = np.percentile(self.data, 25, axis=0, keepdims=True)
+      Q3 = np.percentile(self.data, 75, axis=0, keepdims=True)
       IQR = Q3 - Q1
       lower_bound = Q1 - 1.5 * IQR
       upper_bound = Q3 + 1.5 * IQR
     elif method == 'zscore':
       outliers = self.detect_outliers_zscore()
-      lower_bound = np.mean(self.data) - 3 * np.std(self.data)
-      upper_bound = np.mean(self.data) + 3 * np.std(self.data)
+      lower_bound = np.mean(self.data, axis=0) - 3 * np.std(self.data, axis=0)
+      upper_bound = np.mean(self.data, axis=0) + 3 * np.std(self.data, axis=0)
     else:
       raise ValueError("Method must be 'iqr' or 'zscore'")
     
-    data_capped = np.clip(self.data, lower_bound, upper_bound)
-    return data_capped
+    return np.clip(self.data, lower_bound, upper_bound)
   
   def impute_missing_values(self, method='mean'):
     if method == 'mean':
-      return np.nan_to_num(self.data, nan=np.nanmean(self.data))
+      return np.nan_to_num(self.data, nan=np.nanmean(self.data, axis=0))
     elif method == 'median':
-      return np.nan_to_num(self.data, nan=np.nanmedian(self.data))
+      return np.nan_to_num(self.data, nan=np.nanmedian(self.data, axis=0))
     elif method == 'mode':
-      return np.nan_to_num(self.data, nan=stats.mode(self.data, keepdims=True)[0][0])
+      return np.nan_to_num(self.data, nan=stats.mode(self.data, axis=0, keepdims=True)[0][0])
     else:
       raise ValueError("Method must be 'mean', 'median', or 'mode'")
   
   def create_lag(self, lag):
-    return np.concatenate([np.full(lag, np.nan), self.data[:-lag]])
+    return np.concatenate([np.full((lag, self.data.shape[1]), np.nan), self.data[:-lag]])
   
   def difference(self, order=1):
-    return np.diff(self.data, n=order)
+    return np.diff(self.data, n=order, axis=0)
   
   def rolling_statistic(self, window, statistic='mean'):
-        if statistic == 'mean':
-            return np.convolve(self.data, np.ones(window), 'valid') / window
-        elif statistic == 'sum':
-            return np.convolve(self.data, np.ones(window), 'valid')
-        elif statistic == 'std':
-            return pd.Series(self.data).rolling(window=window).std().dropna().values
-        else:
-            raise ValueError("Statistic must be 'mean', 'sum', or 'std'")
+    if statistic == 'mean':
+      return np.apply_along_axis(lambda m: np.convolve(m, np.ones(window), 'valid') / window, axis=0, arr=self.data)
+    elif statistic == 'sum':
+            return np.apply_along_axis(lambda m: np.convolve(m, np.ones(window), 'valid'), axis=0, arr=self.data)
+    elif statistic == 'std':
+      return np.apply_along_axis(lambda m: pd.Series(m).rolling(window=window).std().dropna().values, axis=0, arr=self.data)
+    else:
+      raise ValueError("Statistic must be 'mean', 'sum', or 'std'")
 
 class Command:
   def execute(self):
