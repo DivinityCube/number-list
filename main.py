@@ -1,4 +1,5 @@
 import tkinter as tk
+import re
 import statistics
 import csv
 import json
@@ -19,7 +20,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from ezodf import Sheet
 from odf.opendocument import OpenDocumentText
 from odf.text import P
-version = '(Version 0.71 BETA) '
+version = '(Version 0.71 BETA 2) '
 window = tk.Tk()
 window.file_extension = ''
 listbox = None
@@ -342,24 +343,30 @@ def update_listbox_numbers(listbox):
     listbox.insert(i, f"{i + 1}. {number}")
 
 def add_number(window, listbox, entry, undo_redo_manager, history_manager):
-  global counter
-  item = entry.get()
-  if not item:
-    messagebox.showerror("Error",
-                         "You can't add an empty entry!",
-                         parent=window)
-    return
-  if item.isdigit() or float or item in algebra_dict:
-    command = AddNumberCommand(listbox, item)
+    global counter
+    item = entry.get()
+    if not item:
+        messagebox.showerror("Error", "You can't add an empty entry!", parent=window)
+        return
+    try:
+        if item.isnumeric() or re.match(r"^-?\d+(\.\d+)?$", item):
+            parsed_item = float(item) if '.' in item else int(item)
+            item_str = str(parsed_item)
+        else:
+            parsed_item = json.loads(item)
+            if isinstance(parsed_item, (list, int, float)):  
+                item_str = str(parsed_item)
+            else:
+                raise ValueError("Input must be a number or list.")
+    except Exception as e:
+        messagebox.showerror("Error", f"Invalid input format: {e}", parent=window)
+        return
+
+    command = AddNumberCommand(listbox, item_str)
     undo_redo_manager.execute(command)
     counter += 1
     history_manager.add_state(list(listbox.get(0, tk.END)))
-  else:
-    messagebox.showerror(
-      "Error",
-      "You can only add numbers or defined algebraic letters!",
-      parent=window)
-  entry.delete(0, tk.END)
+    entry.delete(0, tk.END)
 
 def clear_list(listbox, history_manager, show_message=True):
   numbers = listbox.get(0, tk.END)
@@ -604,7 +611,7 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'Visual Data' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.71 BETA")
+  version_label = tk.Label(about_window, text="Version 0.71 BETA 2")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -816,21 +823,30 @@ def filter_custom_range(window, listbox, undo_redo_manager, history_manager):
 
     tk.Button(filter_window, text="Apply Filter", command=apply_filter).pack()
 
-def export_to_csv(window, listbox):
-  numbers = listbox.get(0, tk.END)
-  if not numbers:
-    messagebox.showerror("Error", "The list is empty! Cannot export an empty list.", parent=window)
-    return
-    
-  file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")], parent=window)
-  if not file_path:
-    return
-    
-  with open(file_path, 'w', newline='') as file:
-    writer = csv.writer(file)
-    for number in numbers:
-      writer.writerow([number.split(". ")[1]])
-  messagebox.showinfo("Export", f"List exported successfully to {file_path}", parent=window)
+def export_to_csv(listbox, filename="export.csv"):
+    data = list(listbox.get(0, tk.END))
+    try:
+        parsed_data = []
+        for item in data:
+            try:
+                parsed_item = json.loads(item)
+            except json.JSONDecodeError:
+                parsed_item = float(item) if '.' in item else int(item)
+            parsed_data.append(parsed_item)
+
+        flattened_data = []
+        for row in parsed_data:
+            if isinstance(row, list):
+                flattened_data.extend(row if isinstance(row[0], (int, float)) else sum(row, []))
+            else:
+                flattened_data.append(row)
+
+        with open(filename, "w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(flattened_data)
+        messagebox.showinfo("Success", f"Data successfully exported to {filename}")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to export data: {e}")
 
 def export_to_excel(window, listbox):
   numbers = listbox.get(0, tk.END)
