@@ -3,6 +3,7 @@ import xml.etree.ElementTree as ET
 import re
 import statistics
 import csv
+import os
 import json
 from datetime import datetime
 from tkinter import messagebox, filedialog
@@ -21,11 +22,53 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from ezodf import Sheet
 from odf.opendocument import OpenDocumentText
 from odf.text import P
-version = '(Version 0.71) '
+version = '(Version 0.72 BETA) '
 window = tk.Tk()
 window.file_extension = ''
 listbox = None
 counter = 1
+SESSION_FILE = "session.json"
+
+def bind_keyboard_shortcuts(window, listbox, undo_redo_manager, entry):
+    window.bind("<Control-z>", lambda event: undo(undo_redo_manager, listbox))
+    window.bind("<Control-y>", lambda event: redo(undo_redo_manager, listbox))
+    window.bind("<Control-n>", lambda event: add_number(window, listbox, entry, undo_redo_manager, history_manager))
+    window.bind("<Control-s>", lambda event: session_manager.save_session(listbox))
+    window.bind("<Control-q>", lambda event: exit_file(window))
+
+class SessionManager():
+  def __init__(self, session_file=SESSION_FILE):
+    self.session_file = session_file
+
+  def save_session(self, listbox):
+    data = list(listbox.get(0, tk.END))
+    try:
+      with open(self.session_file, "w") as file:
+        json.dump(data, file)
+    except Exception as e:
+      messagebox.showerror("Error", f"Failed to save session: {e}")
+  
+  def load_session(self, listbox):
+    if os.path.exists(self.session_file):
+      try:
+        with open(self.session_file, "r") as file:
+          data = json.load(file)
+        if data:
+          if messagebox.askyesno("Recover Session", "Do you want to recover the last session?"):
+            listbox.delete(0, tk.END)
+            for i, item in enumerate(data, start=1):
+              listbox.insert(tk.END, f"{i}. {item}")
+      except Exception as e:
+        messagebox.showerror("Error", f"Failed to load session: {e}")
+  
+  def clear_session(self):
+    if os.path.exists(self.session_file):
+      try:
+        os.remove(self.session_file)
+      except Exception as e:
+        messagebox.showerror("Error", f"Failed to clear session: {e}")
+
+session_manager = SessionManager()
 
 class DataTransformer():
   def __init__(self, data):
@@ -350,32 +393,25 @@ def add_number(window, listbox, entry, undo_redo_manager, history_manager):
         messagebox.showerror("Error", "You can't add an empty entry!", parent=window)
         return
     try:
-        if item.isnumeric() or re.match(r"^-?\d+(\.\d+)?$", item):
-            parsed_item = float(item) if '.' in item else int(item)
-            item_str = str(parsed_item)
-        else:
-            parsed_item = json.loads(item)
-            if isinstance(parsed_item, (list, int, float)):  
-                item_str = str(parsed_item)
-            else:
-                raise ValueError("Input must be a number or list.")
-    except Exception as e:
-        messagebox.showerror("Error", f"Invalid input format: {e}", parent=window)
+        number = float(item) if '.' in item else int(item)
+    except ValueError:
+        messagebox.showerror("Error", "Invalid input. Please enter a number.", parent=window)
         return
 
-    command = AddNumberCommand(listbox, item_str)
+    command = AddNumberCommand(listbox, str(number))
     undo_redo_manager.execute(command)
     counter += 1
     history_manager.add_state(list(listbox.get(0, tk.END)))
+    session_manager.save_session(listbox)
     entry.delete(0, tk.END)
 
 def clear_list(listbox, history_manager, show_message=True):
-  numbers = listbox.get(0, tk.END)
-  if not numbers and show_message:
-    messagebox.showerror("Error", "The list is already empty!")
-  else:
-    listbox.delete(0, tk.END)
-    history_manager.add_state(list(listbox.get(0, tk.END)))
+    if not listbox.get(0, tk.END) and show_message:
+        messagebox.showerror("Error", "The list is already empty!")
+    else:
+        listbox.delete(0, tk.END)
+        history_manager.add_state([])
+        session_manager.clear_session()
 
 from odf import text, teletype
 from odf.opendocument import load
@@ -610,9 +646,9 @@ def about(window):
     about_window.protocol("WM_DELETE_WINDOW", close_about)
   title_label = tk.Label(about_window, text="About Number List:")
   title_label.pack()
-  update_label = tk.Label(about_window, text="The 'Visual Data' Update")
+  update_label = tk.Label(about_window, text="The 'Shortcuts & Sessions' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.71")
+  version_label = tk.Label(about_window, text="Version 0.72 BETA")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -1286,6 +1322,9 @@ def create_new_window():
   button_add = tk.Button(window, text="Add number", 
                          command=lambda: add_number(window, listbox, entry, undo_redo_manager, history_manager))
   button_add.pack()
+
+  bind_keyboard_shortcuts(window, listbox, undo_redo_manager, entry)
+
   button_clear = tk.Button(window,
                            text="Clear List",
                            command=lambda: clear_list(listbox))
@@ -1433,6 +1472,9 @@ def create_window():
   button_add = tk.Button(window, text="Add number", 
                          command=lambda: add_number(window, listbox, entry, undo_redo_manager, history_manager))
   button_add.pack()
+
+  bind_keyboard_shortcuts(window, listbox, undo_redo_manager, entry)
+
   button_clear = tk.Button(window,
                            text="Clear List",
                            command=lambda: clear_list(listbox, history_manager))
@@ -1446,6 +1488,7 @@ def create_window():
   share_menu.add_command(label="Copy to Clipboard", command=lambda: copy_to_clipboard(window, listbox))
   share_menu.add_command(label="Share via Email", command=lambda: share_via_email(window, listbox))
 create_window() 
+session_manager.load_session(listbox)
 
 def main():
   window.mainloop()
