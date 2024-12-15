@@ -22,12 +22,20 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from ezodf import Sheet
 from odf.opendocument import OpenDocumentText
 from odf.text import P
-version = '(Version 0.72 BETA) '
+version = '(Version 0.72 FINAL BETA) '
 window = tk.Tk()
 window.file_extension = ''
 listbox = None
 counter = 1
 SESSION_FILE = "session.json"
+
+def create_status_bar(window):
+    status_label = tk.Label(window, text="Ready", bd=1, relief=tk.SUNKEN, anchor=tk.W)
+    status_label.pack(side=tk.BOTTOM, fill=tk.X)
+    return status_label
+
+def update_status(status_label, message):
+    status_label.config(text=message)
 
 def bind_keyboard_shortcuts(window, listbox, undo_redo_manager, entry):
     window.bind("<Control-z>", lambda event: undo(undo_redo_manager, listbox))
@@ -403,6 +411,7 @@ def add_number(window, listbox, entry, undo_redo_manager, history_manager):
     counter += 1
     history_manager.add_state(list(listbox.get(0, tk.END)))
     session_manager.save_session(listbox)
+    update_status(status_label, f"Number added. List size: {listbox.size()}")  # Update status bar
     entry.delete(0, tk.END)
 
 def clear_list(listbox, history_manager, show_message=True):
@@ -412,6 +421,7 @@ def clear_list(listbox, history_manager, show_message=True):
         listbox.delete(0, tk.END)
         history_manager.add_state([])
         session_manager.clear_session()
+        update_status(status_label, "List cleared.")
 
 from odf import text, teletype
 from odf.opendocument import load
@@ -648,7 +658,7 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'Shortcuts & Sessions' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.72 BETA")
+  version_label = tk.Label(about_window, text="Version 0.72 FINAL BETA")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -1197,6 +1207,7 @@ def create_box_plot(window, listbox):
     save_button.pack(pady=10)
 
 def create_new_window():
+  global status_label
   global counter
   window = tk.Tk()
   global listbox
@@ -1322,13 +1333,14 @@ def create_new_window():
   button_add = tk.Button(window, text="Add number", 
                          command=lambda: add_number(window, listbox, entry, undo_redo_manager, history_manager))
   button_add.pack()
-
-  bind_keyboard_shortcuts(window, listbox, undo_redo_manager, entry)
-
   button_clear = tk.Button(window,
                            text="Clear List",
                            command=lambda: clear_list(listbox))
   button_clear.pack()
+  status_label = create_status_bar(window)
+  session_manager.load_session(listbox)
+  update_status(status_label, f"List loaded. Current size: {listbox.size()}")
+  bind_keyboard_shortcuts(window, listbox, undo_redo_manager, entry)
   theme_menu = tk.Menu(menubar, tearoff=0)
   theme_menu.add_command(label="Light Theme", command=lambda: change_theme("light"))
   theme_menu.add_command(label="Dark Theme", command=lambda: change_theme("dark"))
@@ -1340,6 +1352,7 @@ def create_new_window():
   
 
 def create_window():
+  global status_label
   global history_manager
   history_manager = HistoryManager()
   window.title("Number List")
@@ -1472,13 +1485,14 @@ def create_window():
   button_add = tk.Button(window, text="Add number", 
                          command=lambda: add_number(window, listbox, entry, undo_redo_manager, history_manager))
   button_add.pack()
-
-  bind_keyboard_shortcuts(window, listbox, undo_redo_manager, entry)
-
   button_clear = tk.Button(window,
                            text="Clear List",
                            command=lambda: clear_list(listbox, history_manager))
   button_clear.pack()
+  status_label = create_status_bar(window)
+  session_manager.load_session(listbox)
+  update_status(status_label, f"List loaded. Current size: {listbox.size()}")
+  bind_keyboard_shortcuts(window, listbox, undo_redo_manager, entry)
   theme_menu = tk.Menu(menubar, tearoff=0)
   theme_menu.add_command(label="Light Theme", command=lambda: change_theme("light"))
   theme_menu.add_command(label="Dark Theme", command=lambda: change_theme("dark"))
