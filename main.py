@@ -378,12 +378,14 @@ def delete_selected_entry(listbox, undo_redo_manager):
 def undo(undo_redo_manager, listbox):
   if undo_redo_manager.undo():
     update_listbox_numbers(listbox)
+    update_status(status_label, f"Undo performed. List size: {listbox.size()}")
   else:
     messagebox.showinfo("Info","Nothing to undo!")
 
 def redo(undo_redo_manager, listbox):
   if undo_redo_manager.redo():
     update_listbox_numbers(listbox)
+    update_status(status_label, f"Redo performed. List size: {listbox.size()}")
   else:
     messagebox.showinfo("Info", "Nothing to redo!")
 
@@ -411,7 +413,7 @@ def add_number(window, listbox, entry, undo_redo_manager, history_manager):
     counter += 1
     history_manager.add_state(list(listbox.get(0, tk.END)))
     session_manager.save_session(listbox)
-    update_status(status_label, f"Number added. List size: {listbox.size()}")  # Update status bar
+    update_status(status_label, f"Number added: {number}. List size: {listbox.size()}")  # Update status bar
     entry.delete(0, tk.END)
 
 def clear_list(listbox, history_manager, show_message=True):
@@ -818,11 +820,13 @@ def sort_numbers_ascending(window, listbox, undo_redo_manager, history_manager):
   command = SortCommand(listbox, undo_redo_manager, reverse=False)
   undo_redo_manager.execute(command)
   history_manager.add_state(list(listbox.get(0, tk.END)))
+  update_status(status_label, f"List sorted in ascending order. List size: {listbox.size()}")
 
 def sort_numbers_descending(window, listbox, undo_redo_manager, history_manager):
   command = SortCommand(listbox, undo_redo_manager, reverse=True)
   undo_redo_manager.execute(command)
   history_manager.add_state(list(listbox.get(0, tk.END)))
+  update_status(status_label, f"List sorted in descending order. List size: {listbox.size()}")
 
 def update_listbox_with_numbers(listbox, numbers):
   listbox.delete(0, tk.END)
@@ -835,6 +839,7 @@ def filter_even_numbers(window, listbox, undo_redo_manager, history_manager):
     command = FilterCommand(listbox, even_filter, "Filter Even Numbers")
     undo_redo_manager.execute(command)
     history_manager.add_action("Filtered even numbers")
+    update_status(status_label, f"Filter applied: Even numbers. List size: {listbox.size()}")
 
 def filter_odd_numbers(window, listbox, undo_redo_manager, history_manager):
     def odd_filter(num):
@@ -875,18 +880,17 @@ def export_to_csv(window, listbox):
     if not numbers:
         messagebox.showerror("Error", "The list is empty! Cannot export.", parent=window)
         return
-
+    
     file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")], parent=window)
     if not file_path:
         return
-
-    data = [json.loads(item.split(". ")[1]) if "[" in item else float(item.split(". ")[1]) for item in numbers]
-    data = data if isinstance(data[0], list) else [data]
-
-    with open(file_path, 'w', newline="") as file:
+    
+    with open(file_path, mode='w', newline="") as file:
         writer = csv.writer(file)
-        writer.writerows(data)
-    messagebox.showinfo("Success", f"Data exported to {file_path}", parent=window)
+        writer.writerow([number.split(". ")[1] for number in numbers])
+    
+    update_status(status_label, f"List exported to CSV: {os.path.basename(file_path)}.")
+    messagebox.showinfo("Success", f"List exported to {file_path}", parent=window)
 
 def export_to_excel(window, listbox):
     numbers = listbox.get(0, tk.END)
