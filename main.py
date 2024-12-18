@@ -22,7 +22,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from ezodf import Sheet
 from odf.opendocument import OpenDocumentText
 from odf.text import P
-version = '(Version 0.73 BETA 1) '
+version = '(Version 0.73 FINAL BETA) '
 window = tk.Tk()
 window.file_extension = ''
 listbox = None
@@ -717,7 +717,7 @@ def about(window):
   title_label.pack()
   update_label = tk.Label(about_window, text="The 'No More Errors' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.73 BETA 1")
+  version_label = tk.Label(about_window, text="Version 0.73 FINAL BETA")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
