@@ -22,12 +22,34 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from ezodf import Sheet
 from odf.opendocument import OpenDocumentText
 from odf.text import P
-version = '(Version 0.72-1) '
+version = '(Version 0.73 BETA 1) '
 window = tk.Tk()
 window.file_extension = ''
 listbox = None
 counter = 1
 SESSION_FILE = "session.json"
+
+def remove_duplicates(listbox):
+    unique_items = []
+    for i in range(listbox.size()):
+        item = listbox.get(i).split(". ")[1]
+        if item not in unique_items:
+            unique_items.append(item)
+    
+    listbox.delete(0, tk.END)
+    for i, item in enumerate(unique_items, start=1):
+        listbox.insert(tk.END, f"{i}. {item}")
+    
+    update_status(status_label, "Duplicates removed. List updated.")
+    messagebox.showinfo("Duplicates Removed", "All duplicate entries have been removed.")
+
+def validate_input(value):
+    try:
+        if '.' in value:
+            return float(value)  # Return as float if it contains a decimal point
+        return int(value)  # Return as integer otherwise
+    except ValueError:
+        raise ValueError(f"Invalid data: {value}")
 
 def create_status_bar(window):
     status_label = tk.Label(window, text="Ready", bd=1, relief=tk.SUNKEN, anchor=tk.W)
@@ -397,24 +419,28 @@ def update_listbox_numbers(listbox):
     listbox.insert(i, f"{i + 1}. {number}")
 
 def add_number(window, listbox, entry, undo_redo_manager, history_manager):
-    global counter
-    item = entry.get()
+    global counter, status_label
+    item = entry.get().strip()
     if not item:
         messagebox.showerror("Error", "You can't add an empty entry!", parent=window)
         return
     try:
-        number = float(item) if '.' in item else int(item)
-    except ValueError:
-        messagebox.showerror("Error", "Invalid input. Please enter a number.", parent=window)
-        return
-
-    command = AddNumberCommand(listbox, str(number))
-    undo_redo_manager.execute(command)
-    counter += 1
-    history_manager.add_state(list(listbox.get(0, tk.END)))
-    session_manager.save_session(listbox)
-    update_status(status_label, f"Number added: {number}. List size: {listbox.size()}")  # Update status bar
-    entry.delete(0, tk.END)
+        # Validate input
+        valid_item = validate_input(item)
+        
+        # Add the number or valid item
+        command = AddNumberCommand(listbox, str(valid_item))
+        undo_redo_manager.execute(command)
+        counter += 1
+        history_manager.add_state(list(listbox.get(0, tk.END)))
+        session_manager.save_session(listbox)
+        update_status(status_label, f"Number added: {valid_item}. List size: {listbox.size()}")
+    except ValueError as e:
+        messagebox.showerror("Input Error", str(e), parent=window)
+        entry.config(fg="red")  # Highlight the entry field in red
+        window.after(2000, lambda: entry.config(fg="black"))  # Reset after 2 seconds
+    finally:
+        entry.delete(0, tk.END)
 
 def clear_list(listbox, history_manager, show_message=True):
     if not listbox.get(0, tk.END) and show_message:
@@ -439,40 +465,71 @@ def open_file(window, listbox):
     return
   clear_list(listbox, history_manager, show_message=False)
   window.file_extension = "." + filename.split(".")[-1]
-  if filename.endswith('.xls'):
-    book = xlrd.open_workbook(filename)
-    sheet = book.sheet_by_index(0)
-    for i in range(sheet.nrows):
-      listbox.insert(tk.END, f"{counter}. {str(int(sheet.cell_value(i, 0)))}")
-      counter += 1
-  elif filename.endswith('.csv'):
-    with open(filename, 'r') as f:
-      reader = csv.reader(f)
-      for row in reader:
-        for number in row:
-          listbox.insert(tk.END, f"{counter}. {number}")
+  skipped_rows = []
+  try:
+    if filename.endswith('.xls'):
+      book = xlrd.open_workbook(filename)
+      sheet = book.sheet_by_index(0)
+      for i in range(sheet.rows):
+        try:
+          value = validate_input(str(sheet.cell_value(i, 0)))
+          listbox.insert(tk.END, f"{counter}.{value}")
           counter += 1
-  elif filename.endswith('.odt'):
-    textdoc = load(filename)
-    allparas = textdoc.getElementsByType(text.P)
-    for para in allparas:
-      number = teletype.extractText(para)
-      listbox.insert(tk.END, f"{counter}. {number}")
-      counter += 1
-  elif filename.endswith('.ods'):
-    spreadsheet = ezodf.opendoc(filename).sheets[0]
-    for row in spreadsheet.rows():
-      for cell in row:
-        if cell.value is not None:
-          listbox.insert(tk.END, f"{counter}. {str(cell.value)}")
-  elif filename.endswith('.xlsx'):
-    workbook = openpyxl.load_workbook(filename)
-    sheet = workbook.active
-    for row in sheet.iter_cols(min_row=1, min_col=1, values_only=True):
-      for cell in row:
-        if cell is not None:
-          listbox.insert(tk.END, f"{counter}. {str(cell)}")
+        except ValueError as e:
+          skipped_rows.append((i, e))
+    elif filename.endswith('.csv'):
+      with open(filename, 'r') as f:
+        reader = csv.reader(f)
+        for i, row in enumerate(reader):
+          for number in row:
+            try:
+              value = validate_input(number)
+              listbox.insert(tk.END, f"{counter}.{value}")
+              counter += 1
+            except ValueError as e:
+              skipped_rows.append((i, e))
+    elif filename.endswith('.odt'):
+      textdoc = load(filename)
+      allparas = textdoc.getElementsByType(text.P)
+      for i, para in enumerate(allparas):
+        try:
+          value = validate_input(teletype.extractText(para))
+          listbox.insert(tk.END, f"{counter}.{value}")
           counter += 1
+        except ValueError as e:
+          skipped_rows.append((i, e))
+    elif filename.endswith('.ods'):
+      spreadsheet = ezodf.opendoc(filename).sheets[0]
+      for i, row in enumerate(spreadsheet.rows()):
+        for cell in row:
+          try:
+            if cell.value is not None:
+              value = validate_input(str(cell.value))
+              listbox.insert(tk.END, f"{counter}.{value}")
+              counter += 1
+          except ValueError as e:
+            skipped_rows.append((i, e))
+    elif filename.endswith('.xlsx'):
+      workbook = openpyxl.load_workbook(filename)
+      sheet = workbook.active
+      for i, row in enumerate(sheet.iter_cols(min_row=1, min_col=1, values_only=True)):
+        for cell in row:
+          try:
+            if cell is not None:
+              value = validate_input(str(cell))
+              listbox.insert(tk.END, f"{counter}.{value}")
+              counter += 1
+          except ValueError as e:
+            skipped_rows.append((i, e))
+    if skipped_rows:
+      messagebox.showwarning(
+        "Warning",
+        f"Some rows were skipped due to invalid data:\n" +
+        "\n".join([f"Row {row}: {error}" for row, error in skipped_rows])
+      )
+    update_status(f"File loaded: {os.path.basename(filename)}. List size: {listbox.size()}")
+  except Exception as e:
+    messagebox.showerror("Error", f"Failed to open file: {e}", parent=window)
 
 def add_all_numbers(window, listbox, history_manager, version_label):
   global counter
@@ -658,9 +715,9 @@ def about(window):
     about_window.protocol("WM_DELETE_WINDOW", close_about)
   title_label = tk.Label(about_window, text="About Number List:")
   title_label.pack()
-  update_label = tk.Label(about_window, text="The 'Shortcuts & Sessions' Update")
+  update_label = tk.Label(about_window, text="The 'No More Errors' Update")
   update_label.pack()
-  version_label = tk.Label(about_window, text="Version 0.72-1")
+  version_label = tk.Label(about_window, text="Version 0.73 BETA 1")
   version_label.pack()
   contributor_label = tk.Label(about_window, text="Contributors:")
   contributor_label.pack()
@@ -1243,6 +1300,7 @@ def create_new_window():
   menubar.add_cascade(label="Edit", menu=edit_menu)
   edit_menu.add_command(label="Undo", command=lambda: undo(undo_redo_manager, listbox))
   edit_menu.add_command(label="Redo", command=lambda: redo(undo_redo_manager, listbox))
+  edit_menu.add_command(label="Remove Duplicates", command=lambda: remove_duplicates(listbox))
   help_menu = tk.Menu(menubar, tearoff=0)
   menubar.add_cascade(label="Help", menu=help_menu)
   help_menu.add_command(label="About", command=lambda: about(window))
@@ -1390,6 +1448,7 @@ def create_window():
   menubar.add_cascade(label="Edit", menu=edit_menu)
   edit_menu.add_command(label="Undo", command=lambda: undo(undo_redo_manager, listbox))
   edit_menu.add_command(label="Redo", command=lambda: redo(undo_redo_manager, listbox))
+  edit_menu.add_command(label="Remove Duplicates", command=lambda: remove_duplicates(listbox))
   help_menu = tk.Menu(menubar, tearoff=0)
   help_menu.add_command(label="Report a Bug", command=lambda: report_bug(window))
   menubar.add_cascade(label="Help", menu=help_menu)
