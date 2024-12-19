@@ -535,86 +535,88 @@ def add_all_numbers(window, listbox, history_manager, version_label):
   global counter
   numbers = listbox.get(0, tk.END)
   if len(numbers) < 2:
-    messagebox.showerror("Error",
-                         "There must be numbers to add!",
-                         parent=window)
+        messagebox.showerror("Error", "At least two numbers are required for addition.", parent=window)
+        return
+  if not numbers:
+    messagebox.showerror("Error", "The list is empty, cannot perform addition.", parent=window)
     return
-  total = sum(int(number.split(". ")[1]) for number in numbers)
-  clear_list(listbox, history_manager)
-  listbox.insert(tk.END, f"{counter}. {total}")
-  version_name = simpledialog.askstring("Version Name", "Please enter a name for this version:", parent=window)
-  if not version_name:
-    messagebox.showerror("Error", "Version name cannot be empty.", parent=window)
-    return
-  history_manager.add_state(list(listbox.get(0, tk.END)), name=version_name)
-
-  display_current_version_name(window, history_manager, version_label)
+  try:
+    total = sum(validate_input(number.split(". ")[1]) for number in numbers)
+    clear_list(listbox, history_manager, show_message=False)
+    listbox.insert(tk.END, f"{counter}.{total}")
+    history_manager.add_state(list(listbox.get(0, tk.END)), name="Addition Result")
+    display_current_version_name(window, history_manager, version_label)
+    update_status(status_label, "Addition performed successfully.")
+  except ValueError as e:
+    messagebox.showerror("Error", f"Invalid data detected: {e}", parent=window)
 
 def subtract_numbers(window, listbox, history_manager, version_label):
     global counter
     numbers = listbox.get(0, tk.END)
+    if not numbers:
+      messagebox.showerror("Error", "The list is empty, cannot perform subtraction.", parent=window)
+      return
     if len(numbers) < 2:
       messagebox.showerror("Error",
-                           "There must be numbers to subtract!",
+                           "At least two numbers are required for subtraction.",
                            parent=window)
       return
-    total = float(numbers[0].split(". ")[1]) - sum(
-      float(number.split(". ")[1]) for number in numbers[1:])
-    clear_list(listbox, history_manager)
-    listbox.insert(tk.END, f"{counter}. {total}")
-    version_name = simpledialog.askstring("Version Name", "Please enter a name for this version:", parent=window)
-    if not version_name:
-      messagebox.showerror("Error", "Version name cannot be empty.", parent=window)
-      return
-    history_manager.add_state(list(listbox.get(0, tk.END)), name=version_name)
-
-    display_current_version_name(window, history_manager, version_label)
-
+    try:
+      result = validate_input(numbers[0].split(". ")[1]) - sum(validate_input(num.split(". ")[1]) for num in numbers[1:])
+      clear_list(listbox, history_manager, show_message=False)
+      listbox.insert(tk.END, f"{counter}.{result}")
+      history_manager.add_state(list(listbox.get(0, tk.END)), name = "Subtraction Result")
+      display_current_version_name(window, history_manager, version_label)
+      update_status(status_label, "Subtraction performed successfully.")
+    except ValueError as e:
+      messagebox.showerror("Error", f"Invalid data detected: {e}", parent=window)
 
 def multiply_all_numbers(window, listbox, history_manager, version_label):
-  global counter
-  numbers = listbox.get(0, tk.END)
-  if len(numbers) < 2:
-    messagebox.showerror("Error",
-                         "There must be numbers to multiply!",
-                         parent=window)
-    return
-  total = 1
-  for number in numbers:
-    total *= int(number.split(". ")[1])
-  clear_list(listbox, history_manager)
-  listbox.insert(tk.END, f"{counter}. {total}")
-  version_name = simpledialog.askstring("Version Name", "Please enter a name for this version:", parent=window)
-  if not version_name:
-    messagebox.showerror("Error", "Version name cannot be empty.", parent=window)
-    return
-  history_manager.add_state(list(listbox.get(0, tk.END)), name=version_name)
-
-  display_current_version_name(window, history_manager, version_label)
+    global counter
+    numbers = listbox.get(0, tk.END)
+    if not numbers:
+      messagebox.showerror("Error", "The list is empty, cannot perform multiplication.", parent=window)
+      return
+    if len(numbers) < 2:
+      messagebox.showerror("Error", "At least two numbers are required for multiplication.", parent=window)
+      return
+    try:
+        total = 1
+        for num in numbers:
+            total *= validate_input(num.split(". ")[1])
+        clear_list(listbox, history_manager, show_message=False)
+        listbox.insert(tk.END, f"{counter}. {total}")
+        history_manager.add_state(list(listbox.get(0, tk.END)), name="Multiplication Result")
+        display_current_version_name(window, history_manager, version_label)
+        update_status(status_label, "Multiplication performed successfully.")
+    except ValueError as e:
+        messagebox.showerror("Error", f"Invalid data detected: {e}", parent=window)
 
 def divide_all_numbers(window, listbox, history_manager, version_label):
-  global counter
-  numbers = listbox.get(0, tk.END)
-  if len(numbers) < 2:
-    messagebox.showerror("Error",
-                         "There must be at least two numbers to divide!",
-                         parent=window)
-    return
-  total = int(numbers[0].split(". ")[1])
-  for number in numbers[1:]:
-    if int(number.split(". ")[1]) == 0:
-      messagebox.showerror("Error", "Cannot divide by zero!", parent=window)
+    global counter
+    numbers = listbox.get(0, tk.END)
+    if not numbers:
+      messagebox.showerror("Error", "The list is empty, cannot perform division.", parent=window)
       return
-    total /= int(number.split(". ")[1])
-  clear_list(listbox, history_manager)
-  listbox.insert(tk.END, f"{counter}. {total}")
-  version_name = simpledialog.askstring("Version Name", "Please enter a name for this version:", parent=window)
-  if not version_name:
-    messagebox.showerror("Error", "Version name cannot be empty.", parent=window)
-    return
-  history_manager.add_state(list(listbox.get(0, tk.END)), name=version_name)
-
-  display_current_version_name(window, history_manager, version_label)
+    if len(numbers) < 2:
+      messagebox.showerror("Error", "At least two numbers are required for division.", parent=window)
+      return
+    try:
+        result = validate_input(numbers[0].split(". ")[1])
+        for num in numbers[1:]:
+            divisor = validate_input(num.split(". ")[1])
+            if divisor == 0:
+                raise ZeroDivisionError("Cannot divide by zero!")
+            result /= divisor
+        clear_list(listbox, history_manager, show_message=False)
+        listbox.insert(tk.END, f"{counter}. {result}")
+        history_manager.add_state(list(listbox.get(0, tk.END)), name="Division Result")
+        display_current_version_name(window, history_manager, version_label)
+        update_status(status_label, "Division performed successfully.")
+    except ZeroDivisionError as e:
+        messagebox.showerror("Error", str(e), parent=window)
+    except ValueError as e:
+        messagebox.showerror("Error", f"Invalid data detected: {e}", parent=window)
 
 def square_all_numbers(window, listbox, history_manager, version_label):
   global counter
@@ -874,12 +876,20 @@ def create_advanced_graph(window, listbox):
     update_graph()
 
 def sort_numbers_ascending(window, listbox, undo_redo_manager, history_manager):
+  if listbox.size() == 0:
+    messagebox.showerror("Error", "Cannot sort an empty list.", parent=window)
+    update_status(status_label, "Error: Attempted to sort an empty list.")
+    return
   command = SortCommand(listbox, undo_redo_manager, reverse=False)
   undo_redo_manager.execute(command)
   history_manager.add_state(list(listbox.get(0, tk.END)))
   update_status(status_label, f"List sorted in ascending order. List size: {listbox.size()}")
 
 def sort_numbers_descending(window, listbox, undo_redo_manager, history_manager):
+  if listbox.size() == 0:
+    messagebox.showerror("Error", "Cannot sort an empty list.", parent=window)
+    update_status(status_label, "Error: Attempted to sort an empty list.")
+    return
   command = SortCommand(listbox, undo_redo_manager, reverse=True)
   undo_redo_manager.execute(command)
   history_manager.add_state(list(listbox.get(0, tk.END)))
